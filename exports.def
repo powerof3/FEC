@@ -1,0 +1,4 @@
+LIBRARY	"po3_FEC"
+EXPORTS
+SKSEPlugin_Query
+SKSEPlugin_Load
