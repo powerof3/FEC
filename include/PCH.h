@@ -4,59 +4,40 @@
 #include "REL/Relocation.h"
 #include "SKSE/SKSE.h"
 
-#include <algorithm>
-#include <array>
-#include <atomic>
-#include <bitset>
-#include <cassert>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-#include <functional>
-#include <limits>
-#include <memory>
-#include <mutex>
-#include <optional>
-#include <random>
-#include <set>
-#include <string>
-#include <string_view>
-#include <thread>
-#include <tuple>
-#include <type_traits>
-#include <typeinfo>
-#include <utility>
-#include <variant>
-#include <vector>
-#include <Windows.h>
-
+#include <nonstd/span.hpp>
+#include <SimpleIni.h>
+#include <frozen/string.h>
+#include <frozen/set.h>
 #include <spdlog/sinks/basic_file_sink.h>
-
-#ifndef NDEBUG
-#include <spdlog/sinks/msvc_sink.h>
-#endif
 
 namespace logger = SKSE::log;
 using namespace SKSE::util;
 
 #define DLLEXPORT __declspec(dllexport)
 
-
 namespace FormID
 {
+	// factions
 	inline constexpr RE::FormID falmerFactionID = 0x0002997E;
 	inline constexpr RE::FormID giantFactionID = 0x0004359A;
 	inline constexpr RE::FormID hagravenFactionID = 0x0004359E;
-	inline constexpr RE::FormID rieklingFactionID = 0x0001D9C9;
+	inline constexpr RE::FormID rieklingFactionID = 0x0301D9C9;
 
-	inline constexpr RE::FormID creatureKeywordID = 0x00013795;
-	inline constexpr RE::FormID daedraKeywordID = 0x00013797;
-	inline constexpr RE::FormID dragonKeywordID = 0x00035D59;
-
+	// effect keywords
 	inline constexpr RE::FormID frostKeywordID = 0x0001CEAE;
-	inline constexpr RE::FormID shockKeywordID = 0x0001CEAF;
+
+	// fire shader
+	inline constexpr RE::FormID fireFXShaderID = 0x0001B212;
+	
+	inline constexpr RE::FormID DLC1_SunCloakSpellHandFX = 0x0200A3BD;
 }
 
+inline constexpr frozen::set<RE::FormID, 3> sunHitFXS = { 0x02019C9D, 0x0200A3BB, 0x0200A3BC };
+inline constexpr frozen::set<RE::FormID, 2> sunHitArt = { 0x0200A3B7, 0x0200A3B8 };
+
+inline constexpr frozen::string embersXDPath = R"(EmbersHD\mx_fireatlas02.dds)";
+inline constexpr frozen::string MagicDamageFrost = "MagicDamageFrost";
+inline constexpr frozen::string MagicDamageShock = "MagicDamageShock";
 
 inline std::string as_string(std::string_view v)
 {

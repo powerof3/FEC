@@ -1,5 +1,4 @@
 ﻿#include "version.h"
-#include <SimpleIni.h>
 
 
 std::int32_t actorCount = 0;
@@ -9,17 +8,7 @@ bool spellEdits = false;
 bool updateProperties = false;
 bool cannotFindESP = false;
 
-RE::BGSKeyword* creatureKYWD = nullptr;
-RE::BGSKeyword* daedraKYWD = nullptr;
-RE::BGSKeyword* dragonKYWD = nullptr;
-
-RE::BGSKeyword* frostKYWD = nullptr;
 RE::BGSKeyword* shockKYWD = nullptr;
-
-RE::TESFaction* falmerFaction = nullptr;
-RE::TESFaction* giantFaction = nullptr;
-RE::TESFaction* hagravenFaction = nullptr;
-RE::TESFaction* rieklingFaction = nullptr;
 
 RE::SpellItem* deathEffectsAbility = nullptr;
 RE::SpellItem* deathEffectsPCAbility = nullptr;
@@ -59,40 +48,85 @@ bool GetFormsFromMod()
 {
 	auto dataHandler = RE::TESDataHandler::GetSingleton();
 	if (dataHandler) {
-
 		deathEffectsAbility = dataHandler->LookupForm<RE::SpellItem>(0x067FB28, "FireBurns.esp");
 		if (!deathEffectsAbility) {
 			cannotFindESP = true;
 			return false;
 		}
-		deathEffectsPCAbility = dataHandler->LookupForm<RE::SpellItem>(0x0675924, "FireBurns.esp");
-
-		creatureKYWD = RE::TESForm::LookupByID<RE::BGSKeyword>(FormID::creatureKeywordID);
-		daedraKYWD = RE::TESForm::LookupByID<RE::BGSKeyword>(FormID::daedraKeywordID);
-		dragonKYWD = RE::TESForm::LookupByID<RE::BGSKeyword>(FormID::dragonKeywordID);
-
-		frostKYWD = RE::TESForm::LookupByID<RE::BGSKeyword>(FormID::frostKeywordID);
-		shockKYWD = RE::TESForm::LookupByID<RE::BGSKeyword>(FormID::shockKeywordID);
-
-		falmerFaction = RE::TESForm::LookupByID<RE::TESFaction>(FormID::falmerFactionID);
-		giantFaction = RE::TESForm::LookupByID<RE::TESFaction>(FormID::giantFactionID);
-		hagravenFaction = RE::TESForm::LookupByID<RE::TESFaction>(FormID::hagravenFactionID);
-		rieklingFaction = dataHandler->LookupForm<RE::TESFaction>(FormID::rieklingFactionID, "Dragonborn.esm");
+		deathEffectsPCAbility = dataHandler->LookupForm<RE::SpellItem>(0x00675924, "FireBurns.esp");
 
 		return true;
 	}
-
 	return false;
 }
 
 //----------------------------------------------------------------------------------------
 
-bool IsActorValid(RE::ActorPtr& actor)
+bool ActorHasInactiveBaseSpell(RE::Actor* a_actor, RE::SpellItem* a_spell)
 {
-	if (!actor.get() || actor->HasKeyword(dragonKYWD) || actor->HasKeyword(creatureKYWD) && actor->HasKeyword(daedraKYWD)) {
-		return false;
+	bool hasSpell = false;
+
+	auto base = a_actor->GetActorBase();
+	if (base) {
+		auto spellList = base->GetOrCreateSpellList();
+		if (spellList && spellList->spells) {
+			nonstd::span<RE::SpellItem*> span(spellList->spells, spellList->numSpells);
+			for (auto& spell : span) {
+				if (spell && spell == a_spell) {
+					hasSpell = true;
+					break;
+				}
+			}
+		}
 	}
-	return true;
+
+	if (hasSpell) {
+		auto activeEffects = a_actor->GetActiveEffectList();
+		if (activeEffects) {
+			for (auto& ae : *activeEffects) {
+				if (ae && ae->spell == a_spell) {
+					return false;
+				}
+			}
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
+bool ActorHasBaseSpell(RE::Actor* a_actor, RE::SpellItem* a_spell)
+{
+	bool hasSpell = false;
+
+	auto base = a_actor->GetActorBase();
+	if (base) {
+		auto spellList = base->GetOrCreateSpellList();
+		if (spellList && spellList->spells) {
+			nonstd::span<RE::SpellItem*> span(spellList->spells, spellList->numSpells);
+			for (auto& spell : span) {
+				if (spell && spell == a_spell) {
+					hasSpell = true;
+					break;
+				}
+			}
+		}
+	}
+
+	if (hasSpell) {
+		auto activeEffects = a_actor->GetActiveEffectList();
+		if (activeEffects) {
+			for (auto& ae : *activeEffects) {
+				if (ae && ae->spell == a_spell) {
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+
+	return false;
 }
 
 
@@ -104,15 +138,15 @@ namespace ProcessTasks
 
 		auto processLists = RE::ProcessLists::GetSingleton();
 		if (processLists) {
-
-			if (actorCount == processLists->numberHighActors) {
+			auto numHighActors = processLists->numberHighActors;
+			if (numHighActors == actorCount) {
 				return;
 			}
-			actorCount = processLists->numberHighActors;
-
+			actorCount = numHighActors;
 			for (auto& handle : processLists->highActorHandles) {
-				auto actor = handle.get();
-				if (IsActorValid(actor)) {
+				auto actorPtr = handle.get();
+				auto actor = actorPtr.get();
+				if (actor && actor->IsDead() && ActorHasInactiveBaseSpell(actor, deathEffectsAbility)) {
 					actor->AddSpell(deathEffectsAbility);
 				}
 			}
@@ -124,47 +158,56 @@ namespace ProcessTasks
 		auto& trampoline = SKSE::GetTrampoline();
 		REL::Relocation<std::uintptr_t> ProcessTasks_Hook{ RE::Offset::Main::ProcessTasks, 0x04 };
 		trampoline.write_call<5>(ProcessTasks_Hook.address(), &ApplySpell);
+
+		logger::info("Hooked process task job.");
 	}
 }
 
 //----------------------------------------------------------------------------------------
 
-void FixFrozenDeathSubtitles()
+void DoFrozenDeathSubtitlesFix()
 {
-	using Flags = RE::TOPIC_INFO_DATA::TOPIC_INFO_FLAGS;
+	if (fixSubtitles) {
+		auto dataHandler = RE::TESDataHandler::GetSingleton();
+		if (dataHandler) {
+			using Flags = RE::TOPIC_INFO_DATA::TOPIC_INFO_FLAGS;
+			
+			auto frostKYWD = RE::TESForm::LookupByID<RE::BGSKeyword>(FormID::frostKeywordID);	
 
-	auto dataHandler = RE::TESDataHandler::GetSingleton();
-	if (dataHandler) {
-		for (auto& topic : dataHandler->GetFormArray<RE::TESTopic>()) {
-			if (topic && topic->data.subtype == RE::DIALOGUE_DATA::Subtype::kDeath) {
-				auto count = topic->numTopicInfos;
+			std::uint32_t topicCount = 0;
 
-				for (std::uint32_t i = 0; i < count; i++) {
-					auto topicInfo = topic->topicInfos[i];
+			for (const auto& topic : dataHandler->GetFormArray<RE::TESTopic>()) {
+				if (topic && topic->data.subtype == RE::DIALOGUE_DATA::Subtype::kDeath) {
+					auto count = topic->numTopicInfos;
 
-					if ((topicInfo && (topicInfo->data.flags & Flags::kNoLIPFile) == Flags::kNone)) {
-						auto newNode = new RE::TESConditionItem;
+					for (std::uint32_t i = 0; i < count; i++) {
+						auto topicInfo = topic->topicInfos[i];
 
-						newNode->next = nullptr;
-						newNode->data.comparisonValue.f = 0.0f;
-						newNode->data.functionData.function = RE::FUNCTION_DATA::FunctionID::kHasMagicEffectKeyword;
-						newNode->data.functionData.params[0] = frostKYWD;
+						if ((topicInfo && topicInfo->data.flags.none(Flags::kNoLIPFile))) {
+							auto newNode = new RE::TESConditionItem;
 
-						if (topicInfo->objConditions.head == nullptr) {
-							topicInfo->objConditions.head = newNode;
-						}
-						else {
-							newNode->next = topicInfo->objConditions.head;
-							topicInfo->objConditions.head = newNode;
+							newNode->next = nullptr;
+							newNode->data.comparisonValue.f = 0.0f;
+							newNode->data.functionData.function = RE::FUNCTION_DATA::FunctionID::kHasMagicEffectKeyword;
+							newNode->data.functionData.params[0] = frostKYWD;
+
+							if (topicInfo->objConditions.head == nullptr) {
+								topicInfo->objConditions.head = newNode;
+							} else {
+								newNode->next = topicInfo->objConditions.head;
+								topicInfo->objConditions.head = newNode;
+							}
+							topicCount++;
 						}
 					}
 				}
 			}
+			logger::info("Patched {} death dialogues from showing up on frozen NPCs.", topicCount);
 		}
+	} else {
+		logger::info("Subtitle fix is off.");
 	}
 }
-
-//----------------------------------------------------------------------------------------
 
 void DoSpellEdits()
 {
@@ -178,11 +221,11 @@ void DoSpellEdits()
 
 			logger::info("Starting spell edits");
 			for (const auto& spell : dataHandler->GetFormArray<RE::SpellItem>()) {
-				if (spell && (spell->HasKeyword(frostKYWD) || spell->HasKeyword(shockKYWD))) {
+				if (spell) {
 					for (auto& effect : spell->effects) {
 						if (effect && effect->effectItem.duration == 0.0) {
 							auto baseEffect = effect->baseEffect;
-							if (baseEffect && (baseEffect->HasKeyword(frostKYWD) || baseEffect->HasKeyword(shockKYWD)) && baseEffect->data.castingType != CastingType::kConstantEffect && baseEffect->data.flags.all(Flags::kHostile)) {
+							if (baseEffect && (baseEffect->HasKeywordString(MagicDamageFrost.data()) || baseEffect->HasKeywordString(MagicDamageShock.data())) && baseEffect->data.castingType == CastingType::kFireAndForget && baseEffect->data.flags.all(Flags::kHostile)) {
 								logger::info("	{}", baseEffect->GetName());
 								auto cost = effect->cost;
 								baseEffect->data.flags.reset(Flags::kNoDuration);
@@ -196,8 +239,7 @@ void DoSpellEdits()
 			}
 			logger::info("Finished spell edits. {} magic effects processed", count);
 		}
-	}
-	else {
+	} else {
 		logger::info("Spell edits disabled");
 	}
 }
@@ -225,27 +267,121 @@ void DoBodyTintColorEdits()
 		RE::Color rieklingColor = ini.GetLongValue("Poison", "Riekling", 0x7f8081);
 		std::uint32_t rieklingCount = 0;
 
-		for (auto& actorbase : dataHandler->GetFormArray<RE::TESNPC>()) {
+		auto falmerFaction = RE::TESForm::LookupByID<RE::TESFaction>(FormID::falmerFactionID);
+		auto giantFaction = RE::TESForm::LookupByID<RE::TESFaction>(FormID::giantFactionID);
+		auto hagravenFaction = RE::TESForm::LookupByID<RE::TESFaction>(FormID::hagravenFactionID);
+		auto rieklingFaction = RE::TESForm::LookupByID<RE::TESFaction>(FormID::rieklingFactionID);
+
+		for (const auto& actorbase : dataHandler->GetFormArray<RE::TESNPC>()) {
 			if (actorbase && !actorbase->HasKeyword("ActorTypeNPC")) {
 				if (actorbase->IsInFaction(falmerFaction)) {
 					falmerCount++;
 					actorbase->bodyTintColor = falmerColor;
-				}
-				else if (actorbase->IsInFaction(giantFaction)) {
+				} else if (actorbase->IsInFaction(giantFaction)) {
 					giantCount++;
 					actorbase->bodyTintColor = giantColor;
-				}
-				else if (actorbase->IsInFaction(hagravenFaction)) {
+				} else if (actorbase->IsInFaction(hagravenFaction)) {
 					hagravenCount++;
 					actorbase->bodyTintColor = hagravenColor;
-				}
-				else if (actorbase->IsInFaction(rieklingFaction)) {
+				} else if (actorbase->IsInFaction(rieklingFaction)) {
 					rieklingCount++;
 					actorbase->bodyTintColor = rieklingColor;
 				}
 			}
 		}
 		logger::info("Finished actorbase bodytint edits on {} falmer, {} giants, {} hagravens and {} rieklings", falmerCount, giantCount, hagravenCount, rieklingCount);
+	}
+}
+
+
+void DoEmbersXDPatch()
+{
+	std::vector<RE::TESEffectShader*> fireFXS;
+	auto dataHandler = RE::TESDataHandler::GetSingleton();
+	if (dataHandler) {
+		fireFXS.push_back(dataHandler->LookupForm<RE::TESEffectShader>(0x000198F3, "FireBurns.esp"));
+		fireFXS.push_back(dataHandler->LookupForm<RE::TESEffectShader>(0x000A5038, "FireBurns.esp"));
+	}
+
+	auto defFireFXS = RE::TESForm::LookupByID<RE::TESEffectShader>(FormID::fireFXShaderID);
+	if (defFireFXS && defFireFXS->particleShaderTexture.textureName == embersXDPath.data()) {
+		logger::info("Applying EmbersXD patch");
+		for (auto& shader : fireFXS) {
+			shader->data.flags.reset(RE::EffectShaderData::Flags::kParticleGreyscaleColor);
+			shader->particleShaderTexture.textureName = defFireFXS->particleShaderTexture.textureName;
+			shader->data.colorScale = defFireFXS->data.colorScale;
+			shader->data.colorKey2 = defFireFXS->data.colorKey2;
+			shader->data.colorKey3 = defFireFXS->data.colorKey3;
+			shader->data.particleShaderAnimatedLoopStartFrame = defFireFXS->data.particleShaderAnimatedLoopStartFrame;
+			shader->data.particleShaderAnimatedFrameCount = defFireFXS->data.particleShaderAnimatedFrameCount;
+		}
+	}
+}
+
+
+void DoSunKeywordDistribution()
+{
+	logger::info("Applying global sun keyword to sun magic effects");
+	std::uint32_t count = 0;
+
+	auto sunKeyword = RE::BGSKeyword::CreateKeyword("PO3_MagicDamageSun");
+	if (sunKeyword) {
+		auto dataHandler = RE::TESDataHandler::GetSingleton();
+		if (dataHandler) {
+			auto& keywords = dataHandler->GetFormArray<RE::BGSKeyword>();
+			if (std::find(keywords.begin(), keywords.end(), sunKeyword) == keywords.end()) {  //adding to datahandler array because HasKeywordString pulls the string from there
+				keywords.push_back(sunKeyword);
+			}
+			for (const auto& mgef : dataHandler->GetFormArray<RE::EffectSetting>()) {
+				if (mgef) {
+					auto hitFXS = mgef->data.effectShader;
+					auto castArt = mgef->data.castingArt;
+					auto hitArt = mgef->data.hitEffectArt;
+					if (mgef->HasKeywordString("MAG_MagicDamageSun") || mgef->HasKeywordString("ORD_Res_Sun_Keyword") || hitFXS && std::find(sunHitFXS.begin(), sunHitFXS.end(), hitFXS->GetFormID()) != sunHitFXS.end() || hitArt && std::find(sunHitArt.begin(), sunHitArt.end(), hitArt->GetFormID()) != sunHitArt.end() || castArt && castArt->GetFormID() == FormID::DLC1_SunCloakSpellHandFX) {
+						logger::info("	{}", mgef->GetName());
+						mgef->AddKeyword(sunKeyword);
+						count++;
+					}
+				}
+			}
+		}
+	}
+
+	logger::info("Finished sun keyword distribution. {} magic effects processed", count);
+}
+
+
+bool CanBeAddedTo(RE::TESNPC* a_actorbase)
+{
+	if (a_actorbase->HasKeyword("ActorTypeNPC")) {
+		if (!a_actorbase->HasKeyword("ActorTypeGhost")) {
+			return true;
+		}
+	}
+	if (a_actorbase->HasKeyword("ActorTypeAnimal")) {
+		return true;
+	}
+	if (a_actorbase->HasKeyword("ActorTypeCreature")) {
+		if (!a_actorbase->HasKeyword("ActorTypeDragon") && !a_actorbase->HasKeyword("ActorTypeDaedra")) {
+			return true;
+		}
+	}
+	return false;
+}
+
+
+void DoSpellDistribution()
+{
+	auto dataHandler = RE::TESDataHandler::GetSingleton();
+	if (dataHandler) {
+		for (const auto& actorbase : dataHandler->GetFormArray<RE::TESNPC>()) {
+			if (actorbase && !actorbase->IsPlayer() && CanBeAddedTo(actorbase)) {
+				auto actorEffects = actorbase->GetOrCreateSpellList();
+				if (actorEffects) {
+					actorEffects->AddSpell(deathEffectsAbility);
+				}
+			}
+		}
 	}
 }
 
@@ -280,34 +416,21 @@ This can happen if you merged or eslified FireBurns.esp. Effects will not be app
 			if (updateProperties) {
 				player->RemoveSpell(deathEffectsPCAbility);
 				player->AddSpell(deathEffectsPCAbility);
-			}
-			else {
+			} else {
 				if (!hasSpell) {
 					player->AddSpell(deathEffectsPCAbility);
 				}
 			}
 		}
 
-		if (updateProperties) {
-			CSimpleIniA ini;
-			ini.LoadFile(pluginPath.c_str());
-			ini.SetUnicode();
-
-			ini.SetBoolValue("Update", "UpdateScriptProperties", false);
-			ini.SaveFile(pluginPath.c_str());
-
-			updateProperties = false;
-
-			auto singleton = RE::ProcessLists::GetSingleton();
-			for (auto& handle : singleton->highActorHandles) {
-				auto actor = handle.get();
-				if (IsActorValid(actor)) {
-					actor->RemoveSpell(deathEffectsAbility);
-					actor->AddSpell(deathEffectsAbility);
-				}
+		auto singleton = RE::ProcessLists::GetSingleton();
+		for (auto& handle : singleton->highActorHandles) {
+			auto actorPtr = handle.get();
+			auto actor = actorPtr.get();
+			if (actor && ActorHasBaseSpell(actor, deathEffectsAbility)) {
+				actor->RemoveSpell(deathEffectsAbility);
+				actor->AddSpell(deathEffectsAbility);
 			}
-
-			logger::info("Updated script properties");
 		}
 
 		return RE::BSEventNotifyControl::kContinue;
@@ -330,13 +453,17 @@ std::int32_t compareVersion(const std::string& a_value)
 	std::uint32_t major1 = 0, minor1 = 0;
 	std::uint32_t major2 = 0, minor2 = 0;
 
-	sscanf_s(PE_VER.data(), "%u.%u", &major1, &minor1);
-	sscanf_s(a_value.c_str(), "%u.%u", &major2, &minor2);
+	sscanf_s(a_value.data(), "%u.%u", &major1, &minor1);
+	sscanf_s(PE_VER.data(), "%u.%u", &major2, &minor2);
 
-	if (major1 < major2) return -1;
-	if (major1 > major2) return 1;
-	if (minor1 < minor2) return -1;
-	if (minor1 > minor2) return 1;
+	if (major1 < major2)
+		return -1;
+	if (major1 > major2)
+		return 1;
+	if (minor1 < minor2)
+		return -1;
+	if (minor1 > minor2)
+		return 1;
 
 	return 0;
 }
@@ -345,7 +472,7 @@ std::int32_t compareVersion(const std::string& a_value)
 void OnInit(SKSE::MessagingInterface::Message* a_msg)
 {
 	switch (a_msg->type) {
-		case SKSE::MessagingInterface::kPostLoad:
+	case SKSE::MessagingInterface::kPostLoad:
 		{
 			HMODULE getPapyrusExtenderDLL = GetModuleHandle("po3_PapyrusExtender");
 
@@ -367,8 +494,7 @@ Please note that PapyrusEXTENDER is NOT PapyrusUTILS, which is a different utili
 				}
 
 				MessageBox(NULL, message.c_str(), "Frozen Electrocuted Combustion - Missing Plugin", MB_OK | MB_ICONWARNING);
-			}
-			else {
+			} else {
 				PEGETVERSION peGetVersion = (PEGETVERSION)GetProcAddress(getPapyrusExtenderDLL, "GetPluginVersion");
 
 				if (peGetVersion == NULL) {
@@ -378,11 +504,11 @@ Please note that PapyrusEXTENDER is NOT PapyrusUTILS, which is a different utili
 
 Frozen Electrocuted Combustion [FEC] will not run correctly.
 
-Required PapyrusExtender version : )" + as_string(PE_VER) + " or higher";
+Required PapyrusExtender version : )" + as_string(PE_VER) +
+										  " or higher";
 
 					MessageBox(NULL, message.c_str(), "Frozen Electrocuted Combustion - Outdated Plugin", MB_OK | MB_ICONWARNING);
-				}
-				else {
+				} else {
 					std::string currentPE = peGetVersion();
 					auto compare = compareVersion(currentPE);
 
@@ -391,22 +517,22 @@ Required PapyrusExtender version : )" + as_string(PE_VER) + " or higher";
 
 						std::string message = R"(PapyrusExtender [SKSE plugin] is out of date!
 
-Frozen Electrocuted Combustion [FEC] requires version )" + as_string(PE_VER) +
+Frozen Electrocuted Combustion [FEC] requires version )" +
+											  as_string(PE_VER) +
 
-R"(
+											  R"(
 
 Current PapyrusExtender version : )" + currentPE;
 
 						MessageBox(NULL, message.c_str(), "Frozen Electrocuted Combustion - Outdated Plugin", MB_OK | MB_ICONWARNING);
-					}
-					else if (compare == 1) {
+					} else if (compare == 1) {
 						logger::info("PapyrusExtender SSE plugin version too high | displaying warning message");
 
 						std::string message = R"(PapyrusExtender [SKSE plugin] is newer than expected. You'd probably want to update Frozen Electrocuted Combustion [FEC].
 
 Required PapyrusExtender version : )" + as_string(PE_VER) +
 
-R"(
+											  R"(
 
 Current PapyrusExtender version : )" + currentPE;
 
@@ -416,22 +542,17 @@ Current PapyrusExtender version : )" + currentPE;
 			}
 		}
 		break;
-		case SKSE::MessagingInterface::kDataLoaded:
+	case SKSE::MessagingInterface::kDataLoaded:
 		{
 			if (GetFormsFromMod()) {
 				ProcessTasks::Apply();
-				logger::info("Hooked process task job.");
-				if (fixSubtitles) {
-					logger::info("Patched death dialogue from showing up on frozen NPCs.");
-					FixFrozenDeathSubtitles();
-				}
-				else {
-					logger::info("Subtitle fix is off.");
-				}
+				DoFrozenDeathSubtitlesFix();
+				DoSpellDistribution();
 				DoSpellEdits();
 				DoBodyTintColorEdits();
-			}
-			else {
+				DoEmbersXDPatch();
+				DoSunKeywordDistribution();
+			} else {
 				logger::info("FireBurns.esp not found, aborting...");
 			}
 			auto sourceHolder = RE::ScriptEventSourceHolder::GetSingleton();
@@ -446,10 +567,10 @@ Current PapyrusExtender version : )" + currentPE;
 
 //----------------------------------------------------------------------------------------
 
-extern "C" DLLEXPORT bool APIENTRY SKSEPlugin_Query(const SKSE::QueryInterface * a_skse, SKSE::PluginInfo * a_info)
+extern "C" DLLEXPORT bool APIENTRY SKSEPlugin_Query(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info)
 {
 	try {
-		auto path = logger::log_directory() / "po3_FEC.log";
+		auto path = logger::log_directory().value() / "po3_FEC.log";
 		auto log = spdlog::basic_logger_mt("global log", path.string(), true);
 		log->flush_on(spdlog::level::info);
 
@@ -461,7 +582,7 @@ extern "C" DLLEXPORT bool APIENTRY SKSEPlugin_Query(const SKSE::QueryInterface *
 
 #endif
 		spdlog::set_default_logger(log);
-		spdlog::set_pattern("[%H:%M:%S] [%l] %v");
+		spdlog::set_pattern("[%H:%M:%S:%e:%f] %v");
 
 		logger::info("po3_FEC v{}", FEC_VERSION_VERSTRING);
 
@@ -479,12 +600,10 @@ extern "C" DLLEXPORT bool APIENTRY SKSEPlugin_Query(const SKSE::QueryInterface *
 			logger::critical("Unsupported runtime version {}", ver.string());
 			return false;
 		}
-	}
-	catch (const std::exception& e) {
+	} catch (const std::exception& e) {
 		logger::critical(e.what());
 		return false;
-	}
-	catch (...) {
+	} catch (...) {
 		logger::critical("caught unknown exception");
 		return false;
 	}
@@ -493,18 +612,13 @@ extern "C" DLLEXPORT bool APIENTRY SKSEPlugin_Query(const SKSE::QueryInterface *
 }
 
 
-extern "C" DLLEXPORT bool APIENTRY SKSEPlugin_Load(const SKSE::LoadInterface * a_skse)
+extern "C" DLLEXPORT bool APIENTRY SKSEPlugin_Load(const SKSE::LoadInterface* a_skse)
 {
 	try {
 		logger::info("po3_FEC SSE loaded");
 
-		if (!SKSE::Init(a_skse)) {
-			return false;
-		}
-
-		if (!SKSE::AllocTrampoline(1 << 4)) {
-			return false;
-		}
+		SKSE::Init(a_skse);
+		SKSE::AllocTrampoline(1 << 4);
 
 		ReadINI();
 
@@ -513,12 +627,10 @@ extern "C" DLLEXPORT bool APIENTRY SKSEPlugin_Load(const SKSE::LoadInterface * a
 			logger::critical("Failed to register messaging listener!\n");
 			return false;
 		}
-	}
-	catch (const std::exception& e) {
+	} catch (const std::exception& e) {
 		logger::critical(e.what());
 		return false;
-	}
-	catch (...) {
+	} catch (...) {
 		logger::critical("caught unknown exception");
 		return false;
 	}
