@@ -157,10 +157,12 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\graphics.h" />
     <ClInclude Include="include\PCH.h" />
     <ClInclude Include="include\version.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\graphics.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\PCH.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>

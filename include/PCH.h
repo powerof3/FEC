@@ -1,19 +1,22 @@
 #pragma once
 
 #include "RE/Skyrim.h"
-#include "REL/Relocation.h"
+#include <xbyak/xbyak.h>
 #include "SKSE/SKSE.h"
 
 #include <nonstd/span.hpp>
 #include <SimpleIni.h>
-#include <frozen/string.h>
 #include <frozen/set.h>
 #include <spdlog/sinks/basic_file_sink.h>
 
+
 namespace logger = SKSE::log;
 using namespace SKSE::util;
+namespace stl = SKSE::stl;
+using namespace std::string_view_literals;
 
 #define DLLEXPORT __declspec(dllexport)
+
 
 namespace FormID
 {
@@ -29,17 +32,27 @@ namespace FormID
 	// fire shader
 	inline constexpr RE::FormID fireFXShaderID = 0x0001B212;
 	
+	// sun shader
 	inline constexpr RE::FormID DLC1_SunCloakSpellHandFX = 0x0200A3BD;
+
+	// vec
+	inline constexpr frozen::set<RE::FormID, 3> sunHitFXS = { 0x02019C9D, 0x0200A3BB, 0x0200A3BC };
+	inline constexpr frozen::set<RE::FormID, 2> sunHitArt = { 0x0200A3B7, 0x0200A3B8 };
 }
 
-inline constexpr frozen::set<RE::FormID, 3> sunHitFXS = { 0x02019C9D, 0x0200A3BB, 0x0200A3BC };
-inline constexpr frozen::set<RE::FormID, 2> sunHitArt = { 0x0200A3B7, 0x0200A3B8 };
-
-inline constexpr frozen::string embersXDPath = R"(EmbersHD\mx_fireatlas02.dds)";
-inline constexpr frozen::string MagicDamageFrost = "MagicDamageFrost";
-inline constexpr frozen::string MagicDamageShock = "MagicDamageShock";
-
-inline std::string as_string(std::string_view v)
+namespace STR
 {
-	return { v.data(), v.size() };
+	inline constexpr std::string_view embersXDPath = R"(EmbersHD\mx_fireatlas02.dds)";
+	inline constexpr std::string_view MagicDamageFrost = "MagicDamageFrost"sv;
+	inline constexpr std::string_view MagicDamageShock = "MagicDamageShock"sv;
+
+	inline std::string as_string(std::string_view v)
+	{
+		return { v.data(), v.size() };
+	}
 }
+
+static constexpr std::string_view PapyrusExtender = "po3_PapyrusExtender"sv;
+static constexpr std::string_view PapyrusUtil = "PapyrusUtil"sv;
+
+static constexpr std::string_view PE_VER = "4.3"sv;
