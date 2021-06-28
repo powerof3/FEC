@@ -1,166 +1,131 @@
-﻿#include "graphics.h"
-#include "version.h"
+#include "Graphics.h"
+#include "Settings.h"
 
 //VARS
+extern RE::SpellItem* deathEffectsAbility;
+extern RE::SpellItem* deathEffectsPCAbility;
 
-static bool fixSubtitles = false;
-static bool spellEdits = false;
-static bool updateProperties = false;
-static bool cannotFindESP = false;
+extern RE::TESFile* mod;
 
-static std::string modName;
-static RE::FormID deathEffectsNPCID;
-static RE::FormID deathEffectsPCID;
-static RE::FormID fireFXSID;
-static RE::FormID fireHeavyFXSID;
-static RE::FormID fireDisintegrateFXSID;
-
-RE::SpellItem* deathEffectsAbility = nullptr;
-static RE::SpellItem* deathEffectsPCAbility = nullptr;
-
-const RE::TESFile* mod = nullptr;
-
-static std::vector<std::string> sunExclusions;
-
-static std::string pluginPath;
-
-using PEGETVERSION = const char* (*)();
-
-//EFFECT MAINTAINER
-
-class ActorUpdate
+//EFFECT MAINTAIN
+namespace AbMaintain
 {
-public:
-	static void Hook()
+	namespace detail
 	{
-		HookUpdate();
-		HookUpdateNoAI();
-	}
+		bool has_inactive_base_spell(RE::Character* a_actor)
+		{
+			bool hasSpell = false;
 
-protected:
-	static void HookUpdate()
-	{
-		REL::Relocation<std::uintptr_t> ActorUpdate{ REL::ID(36357) };
-
-		auto& trampoline = SKSE::GetTrampoline();
-		_UpdateAVs = trampoline.write_call<5>(ActorUpdate.address() + 0x1D1, UpdateAVs);
-
-		logger::info("Hooked actor update.");
-	}
-
-	static void HookUpdateNoAI()
-	{
-		REL::Relocation<std::uintptr_t> vtbl{ REL::ID(261397) };  //Character vtbl
-		_UpdateNoAI = vtbl.write_vfunc(0x0AE, UpdateNoAI);
-
-		logger::info("Hooked actor update - no AI.");
-	}
-
-private:
-	static void UpdateAVs(RE::Actor* a_actor)
-	{
-		_UpdateAVs(a_actor);
-
-		if (a_actor != RE::PlayerCharacter::GetSingleton()) {
-			if (ActorHasInactiveBaseSpell(a_actor)) {
-				a_actor->AddSpell(deathEffectsAbility);
+			if (auto base = a_actor->GetActorBase(); base) {
+				auto spellList = base->GetSpellList();
+				if (spellList && spellList->spells && spellList->numSpells > 0) {
+					std::span<RE::SpellItem*> span(spellList->spells, spellList->numSpells);
+					for (const auto& spell : span) {
+						if (spell == deathEffectsAbility) {
+							hasSpell = true;
+							break;
+						}
+					}
+				}
 			}
+
+			if (hasSpell) {
+				const auto activeEffects = a_actor->GetActiveEffectList();
+				if (activeEffects) {
+					for (auto& ae : *activeEffects) {
+						if (ae && ae->spell == deathEffectsAbility) {
+							return false;
+						}
+					}
+				}
+				return true;
+			}
+
+			return false;
 		}
-	}
-	static inline REL::Relocation<decltype(UpdateAVs)> _UpdateAVs;
 
-
-	static void UpdateNoAI(RE::Actor* a_this, float a_delta)
-	{
-		_UpdateNoAI(a_this, a_delta);
-
-		if (a_this != RE::PlayerCharacter::GetSingleton()) {
-			if (ActorHasInactiveBaseSpell(a_this)) {
+		void apply_ab(RE::Character* a_this)
+		{
+			if (!a_this->IsPlayerRef() && has_inactive_base_spell(a_this)) {
 				a_this->AddSpell(deathEffectsAbility);
 			}
 		}
 	}
-	using UpdateNoAI_t = decltype(&RE::Actor::UpdateNoAI);	// 0AE
-	static inline REL::Relocation<UpdateNoAI_t> _UpdateNoAI;
 
-
-	static auto ActorHasInactiveBaseSpell(RE::Actor* a_actor) -> bool
+	struct UpdateAVs
 	{
-		bool hasSpell = false;
+		static void thunk(RE::Character* a_this)
+		{
+			func(a_this);
 
-		if (auto base = a_actor->GetActorBase(); base) {
-			auto spellList = base->GetOrCreateSpellList();
-			if (spellList && spellList->spells) {
-				stl::span<RE::SpellItem*> span(spellList->spells, spellList->numSpells);
-				for (auto& spell : span) {
-					if (spell == deathEffectsAbility) {
-						hasSpell = true;
-						break;
-					}
-				}
-			}
+			detail::apply_ab(a_this);
 		}
+		static inline REL::Relocation<decltype(&thunk)> func;
+	};
 
-		if (hasSpell) {
-			if (auto activeEffects = a_actor->GetActiveEffectList(); activeEffects) {
-				for (auto& ae : *activeEffects) {
-					if (ae && ae->spell == deathEffectsAbility) {
-						return false;
-					}
-				}
-			}
-			return true;
+	struct ActorUpdateNoAI
+	{
+		static void thunk(RE::Character* a_this)
+		{
+			func(a_this);
+
+			detail::apply_ab(a_this);
 		}
+		static inline REL::Relocation<decltype(&thunk)> func;
+	};
 
-		return false;
+	void Install()
+	{
+		REL::Relocation<std::uintptr_t> target{ REL::ID(36357), 0x1D1 };
+		stl::write_thunk_call<UpdateAVs>(target.address());
+
+		stl::write_vfunc<RE::Character, 0x0AE, ActorUpdateNoAI>();
 	}
-};
+}
 
 //PATCHES
-
 class PATCH
 {
 public:
 	static void FrozenDeathSubtitles()
 	{
-		if (fixSubtitles) {
-			auto dataHandler = RE::TESDataHandler::GetSingleton();
-			if (dataHandler) {
-				using Flags = RE::TOPIC_INFO_DATA::TOPIC_INFO_FLAGS;
-				auto frostKYWD = RE::TESForm::LookupByID<RE::BGSKeyword>(FormID::frostKeywordID);
+		using Flags = RE::TOPIC_INFO_DATA::TOPIC_INFO_FLAGS;
 
-				std::uint32_t topicCount = 0;
+		if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
+			const auto frostKYWD = RE::TESForm::LookupByID<RE::BGSKeyword>(formid::frostKeyword);
+			if (!frostKYWD) {
+				return;
+			}
 
-				for (const auto& topic : dataHandler->GetFormArray<RE::TESTopic>()) {
-					if (topic && topic->data.subtype == RE::DIALOGUE_DATA::Subtype::kDeath) {
-						auto count = topic->numTopicInfos;
+			std::uint32_t topicCount = 0;
 
-						for (std::uint32_t i = 0; i < count; i++) {
-							auto topicInfo = topic->topicInfos[i];
+			for (const auto& topic : dataHandler->GetFormArray<RE::TESTopic>()) {
+				if (topic &&
+					topic->topicInfos &&
+					topic->numTopicInfos > 0 &&
+					topic->data.subtype == RE::DIALOGUE_DATA::Subtype::kDeath) {
+					std::span<RE::TESTopicInfo*> span(topic->topicInfos, topic->numTopicInfos);
+					for (auto& topicInfo : span) {
+						if (topicInfo && topicInfo->data.flags.none(Flags::kNoLIPFile)) {
+							auto newNode = new RE::TESConditionItem;
 
-							if (topicInfo && topicInfo->data.flags.none(Flags::kNoLIPFile)) {
-								auto newNode = new RE::TESConditionItem;
+							newNode->next = nullptr;
+							newNode->data.comparisonValue.f = 0.0f;
+							newNode->data.functionData.function = RE::FUNCTION_DATA::FunctionID::kHasMagicEffectKeyword;
+							newNode->data.functionData.params[0] = frostKYWD;
 
-								newNode->next = nullptr;
-								newNode->data.comparisonValue.f = 0.0f;
-								newNode->data.functionData.function = RE::FUNCTION_DATA::FunctionID::kHasMagicEffectKeyword;
-								newNode->data.functionData.params[0] = frostKYWD;
-
-								if (topicInfo->objConditions.head == nullptr) {
-									topicInfo->objConditions.head = newNode;
-								} else {
-									newNode->next = topicInfo->objConditions.head;
-									topicInfo->objConditions.head = newNode;
-								}
-								topicCount++;
+							if (topicInfo->objConditions.head == nullptr) {
+								topicInfo->objConditions.head = newNode;
+							} else {
+								newNode->next = topicInfo->objConditions.head;
+								topicInfo->objConditions.head = newNode;
 							}
+							topicCount++;
 						}
 					}
 				}
-				logger::info("Patched {} death dialogues from showing up on frozen NPCs.", topicCount);
 			}
-		} else {
-			logger::info("Subtitle fix is off.");
+			logger::info("Patched {} death dialogues from showing up on frozen NPCs.", topicCount);
 		}
 	}
 
@@ -169,76 +134,61 @@ public:
 		using Flags = RE::EffectSetting::EffectSettingData::Flag;
 		using CastingType = RE::MagicSystem::CastingType;
 
-		if (spellEdits) {
-			auto dataHandler = RE::TESDataHandler::GetSingleton();
-			if (dataHandler) {
-				std::uint32_t count = 0;
+		if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
+			std::uint32_t count = 0;
 
-				logger::info("Starting spell edits");
-				for (const auto& spell : dataHandler->GetFormArray<RE::SpellItem>()) {
-					if (spell) {
-						for (auto& effect : spell->effects) {
-							if (effect && effect->effectItem.duration == 0.0) {
-								auto baseEffect = effect->baseEffect;
-								if (baseEffect && (baseEffect->HasKeywordString(STR::MagicDamageFrost) || baseEffect->HasKeywordString(STR::MagicDamageShock)) && baseEffect->data.castingType == CastingType::kFireAndForget && baseEffect->data.flags.all(Flags::kHostile)) {
-									auto cost = effect->cost;
-									baseEffect->data.flags.reset(Flags::kNoDuration);
-									effect->effectItem.duration = 1;
-									effect->cost = cost;
-									count++;
-								}
+			const auto is_instant = [](RE::EffectSetting* a_effect) {
+				return a_effect && a_effect->HasKeywordString(str::MagicDamageFrost) && a_effect->data.castingType == CastingType::kFireAndForget && a_effect->data.flags.all(Flags::kHostile) && a_effect->data.flags.all(Flags::kDetrimental);
+			};
+
+			for (const auto& spell : dataHandler->GetFormArray<RE::SpellItem>()) {
+				if (spell) {
+					for (auto& effect : spell->effects) {
+						if (effect && effect->effectItem.duration == 0) {
+							const auto baseEffect = effect->baseEffect;
+							if (is_instant(baseEffect)) {
+								baseEffect->data.flags.reset(Flags::kNoDuration);
+								effect->effectItem.duration = 1;
+								count++;
 							}
 						}
 					}
 				}
-				logger::info("Finished spell edits. {} magic effects processed", count);
 			}
-		} else {
-			logger::info("Spell edits disabled");
+			logger::info("Finished spell edits. {} magic effects processed", count);
 		}
 	}
 
 	static void BodyTintColor()
 	{
-		auto dataHandler = RE::TESDataHandler::GetSingleton();
-		if (dataHandler) {
-			logger::info("Starting actorbase bodytint edits");
+		if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
+			const auto falmerFaction = RE::TESForm::LookupByID<RE::TESFaction>(formid::falmerFaction);
+			const auto giantFaction = RE::TESForm::LookupByID<RE::TESFaction>(formid::giantFaction);
+			const auto hagravenFaction = RE::TESForm::LookupByID<RE::TESFaction>(formid::hagravenFaction);
+			const auto rieklingFaction = RE::TESForm::LookupByID<RE::TESFaction>(formid::rieklingFaction);
 
-			CSimpleIniA ini;
-			ini.LoadFile(pluginPath.c_str());
-			ini.SetUnicode();
-
-			const RE::Color falmerColor = ini.GetLongValue("Poison", "Falmer", 0x7f8081);
 			std::uint32_t falmerCount = 0;
-
-			const RE::Color giantColor = ini.GetLongValue("Poison", "Giant", 0x7f8081);
 			std::uint32_t giantCount = 0;
-
-			const RE::Color hagravenColor = ini.GetLongValue("Poison", "Hagraven", 0x7f8081);
 			std::uint32_t hagravenCount = 0;
-
-			const RE::Color rieklingColor = ini.GetLongValue("Poison", "Riekling", 0x7f8081);
 			std::uint32_t rieklingCount = 0;
 
-			const auto falmerFaction = RE::TESForm::LookupByID<RE::TESFaction>(FormID::falmerFactionID);
-			const auto giantFaction = RE::TESForm::LookupByID<RE::TESFaction>(FormID::giantFactionID);
-			const auto hagravenFaction = RE::TESForm::LookupByID<RE::TESFaction>(FormID::hagravenFactionID);
-			const auto rieklingFaction = RE::TESForm::LookupByID<RE::TESFaction>(FormID::rieklingFactionID);
+			auto settings = Settings::GetSingleton();
+			auto const colors = settings->creatureColors;
 
 			for (const auto& actorbase : dataHandler->GetFormArray<RE::TESNPC>()) {
 				if (actorbase && !actorbase->HasKeyword("ActorTypeNPC"sv)) {
 					if (actorbase->IsInFaction(falmerFaction)) {
 						falmerCount++;
-						actorbase->bodyTintColor = falmerColor;
+						actorbase->bodyTintColor = colors[COLOR::kFalmer];
 					} else if (actorbase->IsInFaction(giantFaction)) {
 						giantCount++;
-						actorbase->bodyTintColor = giantColor;
+						actorbase->bodyTintColor = colors[COLOR::kGiant];
 					} else if (actorbase->IsInFaction(hagravenFaction)) {
 						hagravenCount++;
-						actorbase->bodyTintColor = hagravenColor;
+						actorbase->bodyTintColor = colors[COLOR::kHagraven];
 					} else if (actorbase->IsInFaction(rieklingFaction)) {
 						rieklingCount++;
-						actorbase->bodyTintColor = rieklingColor;
+						actorbase->bodyTintColor = colors[COLOR::kRiekling];
 					}
 				}
 			}
@@ -246,20 +196,13 @@ public:
 		}
 	}
 
-	static void EmbersXD()
+	static void FirePatch()
 	{
-		std::vector<RE::TESEffectShader*> fireFXS;
-		auto dataHandler = RE::TESDataHandler::GetSingleton();
-		if (dataHandler) {
-			fireFXS.push_back(dataHandler->LookupForm<RE::TESEffectShader>(fireFXSID, modName));			  //Fire
-			fireFXS.push_back(dataHandler->LookupForm<RE::TESEffectShader>(fireHeavyFXSID, modName));		  //FireHeavy
-			fireFXS.push_back(dataHandler->LookupForm<RE::TESEffectShader>(fireDisintegrateFXSID, modName));  //FireDisintegrate
-		}
-
-		auto defFireFXS = RE::TESForm::LookupByID<RE::TESEffectShader>(FormID::fireFXShaderID);
-		if (defFireFXS && defFireFXS->particleShaderTexture.textureName == STR::embersXDPath.data()) {
+		const auto defFireFXS = RE::TESForm::LookupByID<RE::TESEffectShader>(formid::fireFXShader);
+		if (defFireFXS && defFireFXS->particleShaderTexture.textureName == str::embersXDPath) {
 			logger::info("Applying EmbersXD patch");
-			for (auto& shader : fireFXS) {
+			auto settings = Settings::GetSingleton();
+			for (auto& shader : settings->fireFXS) {
 				if (shader) {
 					shader->data.flags.reset(RE::EffectShaderData::Flags::kParticleGreyscaleColor);
 					shader->particleShaderTexture.textureName = defFireFXS->particleShaderTexture.textureName;
@@ -274,20 +217,38 @@ public:
 	}
 };
 
-
 //DISTRIBUTION
-
 class DISTRIBUTE
 {
 public:
 	static void DeathEffect()
 	{
-		auto dataHandler = RE::TESDataHandler::GetSingleton();
-		if (dataHandler) {
+		if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
+			const auto can_be_added = [](RE::TESNPC* a_npc) {
+				if (a_npc->IsSummonable() || a_npc->HasKeyword("ActorTypeGhost"sv) || a_npc->IsGhost()) {
+					return false;
+				}
+
+				if (a_npc->HasKeyword("ActorTypeNPC"sv)) {
+					const auto race = a_npc->GetRace();
+					if (const std::string raceName(race ? race->GetFormEditorID() : ""); raceName.find("Child") != std::string::npos) {
+						return false;
+					}
+					return true;
+				}
+				if (a_npc->HasKeyword("ActorTypeCreature"sv) || a_npc->HasKeyword("ActorTypeAnimal"sv)) {
+					if (a_npc->HasKeyword("ActorTypeDragon"sv) || a_npc->HasKeyword("ActorTypeDaedra"sv)) {
+						return false;
+					}					
+					return true;
+				}
+				
+				return false;
+			};
+
 			for (const auto& actorbase : dataHandler->GetFormArray<RE::TESNPC>()) {
-				if (actorbase && !actorbase->IsPlayer() && CanBeAddedTo(actorbase)) {
-					auto actorEffects = actorbase->GetOrCreateSpellList();
-					if (actorEffects) {
+				if (actorbase && !actorbase->IsPlayer() && can_be_added(actorbase)) {
+					if (const auto actorEffects = actorbase->GetSpellList(); actorEffects) {
 						actorEffects->AddSpell(deathEffectsAbility);
 					}
 				}
@@ -295,132 +256,106 @@ public:
 		}
 	}
 
-
 	static void SunKeyword()
 	{
-		logger::info("Applying global sun keyword to sun magic effects");
 		std::uint32_t count = 0;
 
-
-		auto dataHandler = RE::TESDataHandler::GetSingleton();
-		if (dataHandler) {
+		if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 			auto& keywords = dataHandler->GetFormArray<RE::BGSKeyword>();
 
 			RE::BGSKeyword* sunKeyword = nullptr;
 			auto it = std::find_if(keywords.begin(), keywords.end(),
-				[&](const auto& kywd) -> bool { return kywd && kywd->formEditorID == "PO3_MagicDamageSun"sv; });
+				[&](const auto& kywd) -> bool { return kywd && kywd->formEditorID == str::MagicDamageSun; });
 			if (it != keywords.end()) {
 				sunKeyword = *it;
 			} else {
-				sunKeyword = RE::BGSKeyword::CreateKeyword("PO3_MagicDamageSun"sv);
+				const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
+				sunKeyword = factory ? factory->Create() : nullptr;
 				if (sunKeyword) {
+					sunKeyword->formEditorID = str::MagicDamageSun;
 					keywords.push_back(sunKeyword);
-				}		
+				}
 			}
 
-			if (sunKeyword) {
-				for (const auto& mgef : dataHandler->GetFormArray<RE::EffectSetting>()) {
-					if (mgef && CanSunKeywordBeAdded(mgef)) {
-						mgef->AddKeyword(sunKeyword);
-						count++;
+			if (!sunKeyword) {
+				return;
+			}
+
+			const auto is_sun_effect = [](RE::EffectSetting* a_mgef, const std::vector<std::string>& a_exclusions) {
+				using namespace formid;
+				using Flag = RE::EffectSetting::EffectSettingData::Flag;
+
+				const auto hitFXS = a_mgef->data.effectShader;
+				bool isSunEffect = hitFXS && std::ranges::find(sunHitFXS, hitFXS->GetFormID()) != sunHitFXS.end();
+
+				if (!isSunEffect) {
+					const auto hitArt = a_mgef->data.hitEffectArt;
+					isSunEffect = hitArt && std::ranges::find(sunHitArt, hitArt->GetFormID()) != sunHitArt.end();
+				}
+				if (!isSunEffect) {
+					const auto castArt = a_mgef->data.castingArt;
+					isSunEffect = castArt && castArt->GetFormID() == DLC1_SunCloakSpellHandFX;
+				}
+
+				if (isSunEffect) {
+					if (a_mgef->data.flags.none(Flag::kHostile) || a_mgef->data.flags.none(Flag::kDetrimental) || a_mgef->data.castingType == RE::MagicSystem::CastingType::kConstantEffect || a_mgef->data.flags.all(Flag::kNoHitEvent)) {
+						return false;
 					}
+					const std::string name(a_mgef->GetName());
+					if (std::ranges::find(a_exclusions, name) != a_exclusions.end()) {
+						return false;
+					}
+					return true;
+				}
+				return false;
+			};
+
+			auto settings = Settings::GetSingleton();
+			for (const auto& mgef : dataHandler->GetFormArray<RE::EffectSetting>()) {
+				if (mgef && is_sun_effect(mgef, settings->sunExclusions)) {
+					mgef->AddKeyword(sunKeyword);
+					count++;
 				}
 			}
 		}
+
 		logger::info("Finished sun keyword distribution. {} magic effects processed", count);
-	}
-
-
-private:
-	static auto CanBeAddedTo(RE::TESNPC* a_actorbase) -> bool
-	{
-		if (a_actorbase->HasKeyword("ActorTypeNPC"sv)) {
-			if (const auto race = a_actorbase->GetRace(); race) {
-				const std::string raceName(race->GetName());
-				if (raceName.find("Child") != std::string::npos) {
-					return false;
-				}
-			}
-			if (!a_actorbase->HasKeyword("ActorTypeGhost"sv)) {
-				return true;
-			}
-		}
-		if (a_actorbase->HasKeyword("ActorTypeAnimal"sv)) {
-			return true;
-		}
-		if (a_actorbase->HasKeyword("ActorTypeCreature"sv)) {
-			if (!a_actorbase->HasKeyword("ActorTypeDragon"sv) && !a_actorbase->HasKeyword("ActorTypeDaedra"sv)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	static auto CanSunKeywordBeAdded(RE::EffectSetting* mgef) -> bool
-	{
-		using namespace FormID;
-		using namespace RE::MagicSystem;
-		using Flag = RE::EffectSetting::EffectSettingData::Flag;
-
-		const auto hitFXS = mgef->data.effectShader;
-		const auto castArt = mgef->data.castingArt;
-		const auto hitArt = mgef->data.hitEffectArt;
-
-		if (hitFXS && std::find(sunHitFXS.begin(), sunHitFXS.end(), hitFXS->GetFormID()) != sunHitFXS.end() || hitArt && std::find(sunHitArt.begin(), sunHitArt.end(), hitArt->GetFormID()) != sunHitArt.end() || castArt && castArt->GetFormID() == DLC1_SunCloakSpellHandFX) {
-			
-			if (mgef->data.flags.none(Flag::kHostile) || mgef->data.flags.none(Flag::kDetrimental) || mgef->data.castingType == CastingType::kConstantEffect || mgef->data.flags.all(Flag::kNoHitEvent)) {
-				return false;
-			}
-
-			const std::string name(mgef->GetName());
-			if (std::find(sunExclusions.begin(), sunExclusions.end(), name) != sunExclusions.end()) {
-				return false;
-			}
-
-			return true;
-		}
-
-		return false;
 	}
 };
 
-
 //LOAD GAME
-
 class TESLoadGameEventHandler : public RE::BSTEventSink<RE::TESLoadGameEvent>
 {
 public:
-	static auto GetSingleton() -> TESLoadGameEventHandler*
+	static TESLoadGameEventHandler* GetSingleton()
 	{
 		static TESLoadGameEventHandler singleton;
 		return &singleton;
 	}
 
-	auto ProcessEvent(const RE::TESLoadGameEvent* evn, RE::BSTEventSource<RE::TESLoadGameEvent>* a_eventSource) -> RE::BSEventNotifyControl override
+	RE::BSEventNotifyControl ProcessEvent(const RE::TESLoadGameEvent* evn, RE::BSTEventSource<RE::TESLoadGameEvent>*) override
 	{
 		if (!evn) {
 			return RE::BSEventNotifyControl::kContinue;
 		}
 
-		if (cannotFindESP) {
-			RE::ShowMessageBox(R"(Frozen Electrocuted Combustion [FEC] - Missing formIDs! Effects will not be applied!
+		static auto settings = Settings::GetSingleton();
+		if (settings->cannotFindESP) {
+			RE::DebugMessageBox(R"(Frozen Electrocuted Combustion [FEC] - Missing formIDs! Effects will not be applied!
 
 If you have renamed/merged/ESLfied FireBurns.esp, make sure to input the new formids in po3_FEC.ini)");
-			cannotFindESP = false;
+			settings->cannotFindESP = false;
 		}
 
-		auto player = RE::PlayerCharacter::GetSingleton();
-		if (player) {
-			if (!player->HasSpell(deathEffectsPCAbility)) {
-				player->AddSpell(deathEffectsPCAbility);
-			}
+		if (const auto player = RE::PlayerCharacter::GetSingleton(); player) {
+			player->RemoveSpell(deathEffectsPCAbility);
+			player->AddSpell(deathEffectsPCAbility);
 		}
 
 		if (const auto processLists = RE::ProcessLists::GetSingleton(); processLists) {
 			for (auto& actorHandle : processLists->highActorHandles) {
-				auto actorPtr = actorHandle.get();
-				auto actor = actorPtr.get();
-				if (actor && ActorHasBaseSpell(actor, deathEffectsAbility)) {
+				auto actor = actorHandle.get();
+				if (actor && util::has_base_spell(actor.get(), deathEffectsAbility)) {
 					actor->RemoveSpell(deathEffectsAbility);
 					actor->AddSpell(deathEffectsAbility);
 				}
@@ -438,39 +373,20 @@ protected:
 
 	auto operator=(const TESLoadGameEventHandler&) -> TESLoadGameEventHandler& = delete;
 	auto operator=(TESLoadGameEventHandler&&) -> TESLoadGameEventHandler& = delete;
-
-private:
-	static auto ActorHasBaseSpell(RE::Actor* a_actor, RE::SpellItem* a_spell) -> bool
-	{
-		auto base = a_actor->GetActorBase();
-		if (base) {
-			const auto spellList = base->GetOrCreateSpellList();
-			if (spellList && spellList->spells) {
-				stl::span<RE::SpellItem*> span(spellList->spells, spellList->numSpells);
-				for (auto& spell : span) {
-					if (spell == a_spell) {
-						return true;
-					}
-				}
-			}
-		}
-
-		return false;
-	}
 };
 
-
 // ERROR HANDLING
-
 class SanityCheck
 {
 public:
+	using PEGETVERSION = const char* (*)();
+
 	static auto GetError() -> std::vector<std::string>
 	{
 		std::vector<std::string> vec;
 
-		const auto papyrusExtenderHandle = GetModuleHandle(PapyrusExtender.data());
-		const auto papyrusUtilsHandle = GetModuleHandle(PapyrusUtil.data());
+		const auto papyrusExtenderHandle = GetModuleHandle(ver::PapyrusExtender.data());
+		const auto papyrusUtilsHandle = GetModuleHandle(ver::PapyrusUtil.data());
 
 		std::string message;
 		std::string info;
@@ -498,8 +414,8 @@ Please note that Papyrus EXTENDER is NOT Papyrus UTILS, which is a different SKS
 				message = R"(PapyrusExtender [SKSE plugin] is severely out of date!
 
 Required PapyrusExtender version : )" +
-						  STR::as_string(PE_VER) +
-						  " or higher";
+				          std::string(ver::PE) +
+				          " or higher";
 			} else {
 				std::string currentPE(peGetVersion());
 				auto compare = compareVersion(currentPE);
@@ -512,12 +428,12 @@ Required PapyrusExtender version : )" +
 					message = R"(PapyrusExtender [SKSE plugin] is out of date!
 
 Frozen Electrocuted Combustion [FEC] requires version )" +
-							  STR::as_string(PE_VER) +
+					          std::string(ver::PE) +
 
-							  R"(
+					          R"(
 
 Current PapyrusExtender version : )" +
-							  currentPE;
+					          currentPE;
 
 				} else if (compare == 1) {
 					logger::info("PapyrusExtender SSE plugin version too high");
@@ -527,12 +443,12 @@ Current PapyrusExtender version : )" +
 					message = R"(PapyrusExtender [SKSE plugin] is newer than expected. You'd probably want to update Frozen Electrocuted Combustion [FEC].
 
 Required PapyrusExtender version : )" +
-							  STR::as_string(PE_VER) +
+					          std::string(ver::PE) +
 
-							  R"(
+					          R"(
 
 Current PapyrusExtender version : )" +
-							  currentPE;
+					          currentPE;
 				}
 			}
 		}
@@ -556,90 +472,24 @@ private:
 		std::uint32_t major2 = 0, minor2 = 0;
 
 		sscanf_s(a_value.data(), "%u.%u", &major1, &minor1);
-		sscanf_s(PE_VER.data(), "%u.%u", &major2, &minor2);
+		sscanf_s(ver::PE.data(), "%u.%u", &major2, &minor2);
 
-		if (major1 < major2)
+		if (major1 < major2) {
 			return -1;
-		if (major1 > major2)
+		}
+		if (major1 > major2) {
 			return 1;
-		if (minor1 < minor2)
+		}
+		if (minor1 < minor2) {
 			return -1;
-		if (minor1 > minor2)
+		}
+		if (minor1 > minor2) {
 			return 1;
+		}
 
 		return 0;
 	}
 };
-
-
-//INI AND FORM HANDLING
-
-class INI
-{
-public:
-	static auto Read() -> bool
-	{
-		pluginPath = SKSE::GetPluginConfigPath("po3_FEC");
-
-		CSimpleIniA ini;
-
-		auto rc = ini.LoadFile(pluginPath.c_str());
-		if (rc < 0) {
-			logger::error("Can't load 'po3_FEC.ini'");
-			return false;
-		}
-
-		ini.SetUnicode();
-
-		fixSubtitles = ini.GetBoolValue("Frost", "SubtitleFix", true);
-		spellEdits = ini.GetBoolValue("Spell", "SpellDurationEdits", false);
-		updateProperties = ini.GetBoolValue("Update", "UpdateScriptProperties", false);
-
-		modName = ini.GetValue("FormIDs", "ModName", "FireBurns.esp");
-		deathEffectsNPCID = ini.GetLongValue("FormIDs", "DeathEffectsNPCAbility", 0x0067FB28);
-		deathEffectsPCID = ini.GetLongValue("FormIDs", "DeathEffectsPCAbility", 0x00675924);
-		fireFXSID = ini.GetLongValue("FormIDs", "FireFXS", 0x000198F3);
-		fireHeavyFXSID = ini.GetLongValue("FormIDs", "FireHeavyFXS", 0x000A5038);
-		fireDisintegrateFXSID = ini.GetLongValue("FormIDs", "FireDisintegrateFXS", 0x0066B722);
-
-		std::string exclusions(ini.GetValue("Sun", "Exclusions", "NONE"));
-		if (exclusions == "NONE") {
-			exclusions = "AoL - Pitiless";
-			ini.SetValue("Sun", "Exclusions", exclusions.c_str(), ";Excludes magic effects from dealing sun damage. Additional effect names must be seperated using a comma, eg: SunDmgEffect , SunDmgEffect2");
-			ini.SaveFile(pluginPath.c_str());
-		}
-		logger::info("Sun Exclusion effects = {}", exclusions);
-
-		sunExclusions = SKSE::UTIL::STRING::split(exclusions, " , ");
-
-		return true;
-	}
-
-	static auto GetFormsFromMod() -> bool
-	{
-		auto dataHandler = RE::TESDataHandler::GetSingleton();
-		if (dataHandler) {
-			deathEffectsAbility = dataHandler->LookupForm<RE::SpellItem>(deathEffectsNPCID, modName);
-			if (!deathEffectsAbility) {
-				cannotFindESP = true;
-				return false;
-			}
-			deathEffectsPCAbility = dataHandler->LookupForm<RE::SpellItem>(deathEffectsPCID, modName);
-			if (!deathEffectsPCAbility) {
-				cannotFindESP = true;
-				return false;
-			}
-			mod = dataHandler->LookupLoadedModByName(modName);
-			if (!mod) {
-				cannotFindESP = true;
-				return false;
-			}
-			return true;
-		}
-		return false;
-	}
-};
-
 
 void OnInit(SKSE::MessagingInterface::Message* a_msg)
 {
@@ -648,7 +498,7 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 		{
 			auto vec = SanityCheck::GetError();
 			if (!vec.empty() && vec.size() == 2) {
-				auto id = MessageBoxA(nullptr, vec[0].c_str(), vec[1].c_str(), MB_OKCANCEL);
+				auto id = WinAPI::MessageBox(nullptr, vec[0].c_str(), vec[1].c_str(), 0x000001);
 				if (id == 2) {
 					std::_Exit(EXIT_FAILURE);
 				}
@@ -657,18 +507,53 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
-			if (INI::GetFormsFromMod()) {
-				ActorUpdate::Hook();
-				ARMOR::Attach::Hook();
-				ARMOR::Detach::Hook();
-				PATCH::FrozenDeathSubtitles();
-				PATCH::SpellDuration();
+			auto settings = Settings::GetSingleton();
+			if (settings->GetFormsFromMod()) {
+				const auto get_tweaks_fix = []() {
+					const auto po3TweaksHandle = GetModuleHandle(ver::po3Tweaks.data());
+					if (po3TweaksHandle == nullptr) {
+						return false;
+					}
+
+					constexpr auto path = L"Data/SKSE/Plugins/po3_Tweaks.ini";
+					CSimpleIniA ini;
+					ini.SetUnicode();
+
+					auto rc = ini.LoadFile(path);
+					if (rc < 0) {
+						return false;
+					}
+
+					return ini.GetBoolValue("Fixes", "Cast No-Death-Dispel Spells on Load", false);
+				};
+
+				if (!get_tweaks_fix()) {
+					AbMaintain::Install();
+				} else {
+					logger::info("powerofthree's tweaks mod found, skipping ability maintainer");
+				}
+
+				ARMOR::Attach::Install();
+				ARMOR::Detach::Install();
+
+				if (settings->fixSubtitles) {
+					PATCH::FrozenDeathSubtitles();
+				} else {
+					logger::info("subtitle fix disabled");
+				}
+
+				/*if (settings->spellEdits) {
+					PATCH::SpellDuration();
+				} else {
+					logger::info("spell edits disabled");
+				}*/ 
+
 				PATCH::BodyTintColor();
-				PATCH::EmbersXD();
+				PATCH::FirePatch();
 				DISTRIBUTE::DeathEffect();
 				DISTRIBUTE::SunKeyword();
 
-				if (auto sourceHolder = RE::ScriptEventSourceHolder::GetSingleton(); sourceHolder) {
+				if (const auto sourceHolder = RE::ScriptEventSourceHolder::GetSingleton(); sourceHolder) {
 					sourceHolder->AddEventSink(RESET::TESResetEventHandler::GetSingleton());
 					logger::info("Registered reset event handler.");
 				}
@@ -686,73 +571,61 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 	}
 }
 
-
-extern "C" DLLEXPORT bool APIENTRY SKSEPlugin_Query(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info)
+extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info)
 {
-	try {
-		auto path = logger::log_directory().value() / "po3_FEC.log";
-		auto log = spdlog::basic_logger_mt("global log", path.string(), true);
-		log->flush_on(spdlog::level::info);
+#ifndef NDEBUG
+	auto sink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
+#else
+	auto path = logger::log_directory();
+	if (!path) {
+		return false;
+	}
+
+	*path /= "po3_FEC.log"sv;
+	auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true);
+#endif
+
+	auto log = std::make_shared<spdlog::logger>("global log"s, std::move(sink));
 
 #ifndef NDEBUG
-		log->set_level(spdlog::level::debug);
-		log->sinks().push_back(std::make_shared<spdlog::sinks::msvc_sink_mt>());
+	log->set_level(spdlog::level::trace);
 #else
-		log->set_level(spdlog::level::info);
-
+	log->set_level(spdlog::level::info);
+	log->flush_on(spdlog::level::info);
 #endif
-		set_default_logger(log);
-		spdlog::set_pattern("[%H:%M:%S] %v");
 
-		logger::info("po3_FEC v{}", FEC_VERSION_VERSTRING);
+	spdlog::set_default_logger(std::move(log));
+	spdlog::set_pattern("[%H:%M:%S] [%l] %v"s);
 
-		a_info->infoVersion = SKSE::PluginInfo::kVersion;
-		a_info->name = "powerofthree's FEC Helper plugin";
-		a_info->version = FEC_VERSION_MAJOR;
+	logger::info(FMT_STRING("{} v{}"), Version::PROJECT, Version::NAME);
 
-		if (a_skse->IsEditor()) {
-			logger::critical("Loaded in editor, marking as incompatible");
-			return false;
-		}
+	a_info->infoVersion = SKSE::PluginInfo::kVersion;
+	a_info->name = "FEC Helper plugin";
+	a_info->version = Version::MAJOR;
 
-		const auto ver = a_skse->RuntimeVersion();
-		if (ver < SKSE::RUNTIME_1_5_39) {
-			logger::critical("Unsupported runtime version {}", ver.string());
-			return false;
-		}
-	} catch (const std::exception& e) {
-		logger::critical(e.what());
+	if (a_skse->IsEditor()) {
+		logger::critical("Loaded in editor, marking as incompatible"sv);
 		return false;
-	} catch (...) {
-		logger::critical("caught unknown exception");
+	}
+
+	const auto ver = a_skse->RuntimeVersion();
+	if (ver < SKSE::RUNTIME_1_5_39) {
+		logger::critical(FMT_STRING("Unsupported runtime version {}"), ver.string());
 		return false;
 	}
 
 	return true;
 }
 
-
-extern "C" DLLEXPORT bool APIENTRY SKSEPlugin_Load(const SKSE::LoadInterface* a_skse)
+extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse)
 {
-	try {
-		logger::info("po3_FEC SSE loaded");
+	logger::info("loaded");
 
-		Init(a_skse);
-		SKSE::AllocTrampoline(75);
+	SKSE::Init(a_skse);
+	SKSE::AllocTrampoline(75);
 
-		INI::Read();
-
-		auto messaging = SKSE::GetMessagingInterface();
-		if (!messaging->RegisterListener("SKSE", OnInit)) {
-			return false;
-		}
-	} catch (const std::exception& e) {
-		logger::critical(e.what());
-		return false;
-	} catch (...) {
-		logger::critical("caught unknown exception");
-		return false;
-	}
+	const auto messaging = SKSE::GetMessagingInterface();
+	messaging->RegisterListener(OnInit);
 
 	return true;
 }
