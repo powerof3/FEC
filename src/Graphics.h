@@ -22,7 +22,7 @@ namespace util
 		"FEC - XRay"sv
 	};
 
-	inline constexpr std::array<std::string_view, 4> effectDoneFac = {
+	inline constexpr std::array<std::string_view, 2> effectDoneFac = {
 		"FEC - Effects Done"sv,
 		"FEC - Temp Effects Done"sv
 	};

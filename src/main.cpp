@@ -397,11 +397,19 @@ public:
 			info = "Frozen Electrocuted Combustion - Missing Plugin";
 
 			if (papyrusUtilsHandle == nullptr) {
-				message = R"(Frozen Electrocuted Combustion [FEC] is missing Papyrus Extender [SKSE plugin])";
-			} else {
-				message = R"(Frozen Electrocuted Combustion [FEC] is missing Papyrus Extender [SKSE plugin]
+				message = R"(Papyrus Extender [SKSE plugin] is not loaded! Frozen Electrocuted Combustion [FEC] will not work correctly!
 
-Please note that Papyrus EXTENDER is NOT Papyrus UTILS, which is a different SKSE plugin.)";
+If you have installed, and activated Papyrus Extender in your mod manager, make sure you have all requirements installed, including Microsoft Visual C++ Redistributables 2019.
+
+Otherwise, please download and install it.)";
+			} else {
+				message = R"(Papyrus Extender [SKSE plugin] is not loaded! Frozen Electrocuted Combustion [FEC] will not work correctly!
+
+Please note that Papyrus EXTENDER is NOT Papyrus UTILS, which is a different SKSE plugin.
+
+If you have installed, and activated Papyrus Extender in your mod manager, make sure you have all requirements installed, including Microsoft Visual C++ Redistributables 2019.
+
+Otherwise, please download and install it.)";
 			}
 		} else {
 			const auto peGetVersion = reinterpret_cast<PEGETVERSION>(GetProcAddress(papyrusExtenderHandle, "GetPluginVersion"));
@@ -560,7 +568,7 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 			} else {
 				logger::info("FEC esp not found, aborting...");
 			}
-			if (auto sourceHolder = RE::ScriptEventSourceHolder::GetSingleton(); sourceHolder) {
+			if (const auto sourceHolder = RE::ScriptEventSourceHolder::GetSingleton(); sourceHolder) {
 				sourceHolder->AddEventSink(TESLoadGameEventHandler::GetSingleton());
 				logger::info("Registered game load event handler.");
 			}

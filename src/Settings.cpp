@@ -85,6 +85,9 @@ bool Settings::GetFormsFromMod()
 		deathEffectsPCAbility = dataHandler->LookupForm<RE::SpellItem>(deathEffectsPCID, modName);
 
 		mod = const_cast<RE::TESFile*>(dataHandler->LookupLoadedModByName(modName));
+		if (!mod) {
+			mod = const_cast<RE::TESFile*>(dataHandler->LookupLoadedLightModByName(modName));
+		}
 
 		if (!deathEffectsAbility || !deathEffectsPCAbility || !mod) {
 			cannotFindESP = true;

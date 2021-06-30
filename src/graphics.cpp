@@ -11,8 +11,8 @@ namespace util
 
 		a_actor->VisitFactions([&result](RE::TESFaction* a_faction, std::int8_t a_rank) {
 			if (a_faction && a_rank > -1) {
-				std::string_view fac{ a_faction->GetName() };
-				if (std::ranges::find(effectDoneFac, fac) != effectDoneFac.end()) {
+				if (std::string_view fac{ a_faction->GetName() }; std::ranges::find(effectDoneFac, fac) != effectDoneFac.end()) {
+					result = true;
 					return true;
 				}
 			}
@@ -332,7 +332,7 @@ namespace ARMOR
 					if (facType == -1) {
 						return;
 					}
-					
+
 					const auto biped = a_actor->GetCurrentBiped().get();
 					const auto root = a_actor->Get3D();
 					if (root && biped) {
@@ -383,7 +383,7 @@ namespace ARMOR
 				if (a_node && !a_node->AsFadeNode()) {
 					const auto user = a_node->GetUserData();
 					const auto actor = user ? user->As<RE::Actor>() : nullptr;
-					
+
 					if (actor && !actor->IsPlayerRef() && has_keyword(actor, NPC)) {
 						const auto root = actor->Get3D(false);
 						if (!root) {
@@ -474,9 +474,11 @@ namespace RESET
 			if (!resetFaction) {
 				if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 					for (auto& faction : dataHandler->GetFormArray<RE::TESFaction>()) {
-						if (faction && faction->GetName() == effectResetFac) {
-							resetFaction = faction;
-							break;
+						if (faction && mod->IsFormInMod(faction->GetFormID())) {
+							if (const std::string name(faction->GetName()); name == effectResetFac) {
+								resetFaction = faction;
+								break;
+							}
 						}
 					}
 				}
