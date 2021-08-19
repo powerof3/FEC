@@ -13,7 +13,7 @@ Settings* Settings::GetSingleton()
 
 void ReadFormIDEntry(CSimpleIniA& a_ini, RE::FormID& a_formID, const char* a_entry, const char* a_default)
 {
-	std::string str = a_ini.GetValue("FormIDs", a_entry, a_default);
+    const std::string str = a_ini.GetValue("FormIDs", a_entry, a_default);
 	a_ini.SetValue("FormIDs", a_entry, str.c_str(), "", true);
 
 	a_formID = string::lexical_cast<RE::FormID>(str, true);
@@ -52,13 +52,13 @@ void Settings::LoadSettings()
 
 	try {
 		creatureColors.reserve(4);
-		for (auto i = stl::to_underlying(COLOR::kGiant); i < stl::to_underlying(COLOR::kTotal); i++) {
+		for (auto i = stl::to_underlying(kGiant); i < stl::to_underlying(kTotal); i++) {
 			auto [name, defColor] = GetColorType(i);
 
-			auto color = ini.GetValue("Poison", name, defColor);
+            const auto color = ini.GetValue("Poison", name, defColor);
 			ini.SetValue("Poison", name, color, "", true);
 
-			creatureColors.emplace_back(string::lexical_cast<std::uint32_t>(color));
+			creatureColors.emplace_back(string::lexical_cast<std::uint32_t>(color, true));
 		}
 	} catch (...) {
 		logger::critical("failed to get creature colors from po3_FEC.ini !");

@@ -29,7 +29,7 @@ namespace util
 		a_actor->VisitFactions([&x](RE::TESFaction* a_faction, std::int8_t a_rank) {
 			if (a_faction && a_rank > -1) {
 				const std::string name(a_faction->GetName());
-				for (std::int32_t i = 0; i < effectFac.size(); i++) {
+				for (std::uint32_t i = 0; i < effectFac.size(); i++) {
 					if (name == effectFac[i]) {
 						x = i;
 						return true;
@@ -51,7 +51,7 @@ namespace util
 
 		if (spellList && spellList->spells && spellList->numSpells > 0) {
 			std::span<RE::SpellItem*> span(spellList->spells, spellList->numSpells);
-			for (auto& spell : span) {
+			for (const auto& spell : span) {
 				if (spell == a_spell) {
 					hasSpell = true;
 					break;
@@ -71,7 +71,7 @@ namespace util
 		std::optional<std::uint32_t> result = std::nullopt;
 
 		std::span<RE::NiExtraData*> span(a_object->extra, a_object->extraDataSize);
-		for (auto& extraData : span) {
+		for (const auto& extraData : span) {
 			if (result.has_value()) {
 				break;
 			}
@@ -139,12 +139,12 @@ namespace GRAPHICS
 			object->CullNode(a_toggle);
 
 			if (a_setData) {
-				if (auto data = a_root->GetExtraData<RE::NiStringsExtraData>(EXTRA::TOGGLE); data) {
+				if (const auto data = a_root->GetExtraData<RE::NiStringsExtraData>(EXTRA::TOGGLE); data) {
 					a_toggle ?
                         data->Insert(a_nodeName) :
                         data->Remove(a_nodeName);
 				} else if (a_toggle) {
-					std::vector<RE::BSFixedString> vec{ a_nodeName };
+                    const std::vector<RE::BSFixedString> vec{ a_nodeName };
 					if (const auto newData = RE::NiStringsExtraData::Create(EXTRA::TOGGLE, vec); newData) {
 						a_root->AddExtraData(newData);
 					}
@@ -158,12 +158,12 @@ namespace GRAPHICS
 		a_node->CullNode(a_toggle);
 
 		if (a_setData) {
-			if (auto data = a_root->GetExtraData<RE::NiStringsExtraData>(EXTRA::TOGGLE); data) {
+			if (const auto data = a_root->GetExtraData<RE::NiStringsExtraData>(EXTRA::TOGGLE); data) {
 				a_toggle ?
                     data->Insert(a_node->name) :
                     data->Remove(a_node->name);
 			} else if (a_toggle) {
-				std::vector<RE::BSFixedString> vec{ a_node->name };
+                const std::vector<RE::BSFixedString> vec{ a_node->name };
 				if (const auto newData = RE::NiStringsExtraData::Create(EXTRA::TOGGLE, vec); newData) {
 					a_root->AddExtraData(newData);
 				}
@@ -173,7 +173,7 @@ namespace GRAPHICS
 
 	void SetHeadPartAlpha(RE::Actor* a_actor, RE::NiAVObject* a_root, HeadPart a_type, float a_alpha, bool a_setData)
 	{
-		if (auto object = a_actor->GetHeadPartObject(a_type); object) {
+		if (const auto object = a_actor->GetHeadPartObject(a_type); object) {
 			object->UpdateMaterialAlpha(a_alpha, false);
 
 			if (a_setData) {
@@ -210,7 +210,7 @@ namespace ARMOR
 						return;
 					}
 
-					const auto facType = util::get_FEC_faction(actor);
+					const auto facType = get_FEC_faction(actor);
 					if (facType == -1) {
 						return;
 					}
@@ -285,7 +285,7 @@ namespace ARMOR
 							const auto addon = a_biped->objects[bipedSlot].addon;
 							return addon && mod->IsFormInMod(addon->formID);
 						})) {
-						RE::BSVisit::TraverseScenegraphGeometries(a_object, [&](RE::BSGeometry* a_geom) -> RE::BSVisit::BSVisitControl {
+						RE::BSVisit::TraverseScenegraphGeometries(a_object, [&](const RE::BSGeometry* a_geom) -> RE::BSVisit::BSVisitControl {
 							if (!a_geom->name.empty()) {
 								switch (string::const_hash(a_geom->name)) {
 								case string::const_hash(UNDERWEAR::male0):
@@ -393,7 +393,7 @@ namespace ARMOR
 						RE::BSVisit::TraverseScenegraphGeometries(a_node, [&](RE::BSGeometry* a_geometry) -> RE::BSVisit::BSVisitControl {
 							auto result = RE::BSVisit::BSVisitControl::kContinue;
 
-							auto val = util::get_data(a_geometry);
+                            const auto val = get_data(a_geometry);
 							if (!val.has_value()) {
 								return result;
 							}
@@ -473,7 +473,7 @@ namespace RESET
 			static RE::TESFaction* resetFaction;
 			if (!resetFaction) {
 				if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-					for (auto& faction : dataHandler->GetFormArray<RE::TESFaction>()) {
+					for (const auto& faction : dataHandler->GetFormArray<RE::TESFaction>()) {
 						if (faction && mod->IsFormInMod(faction->GetFormID())) {
 							if (const std::string name(faction->GetName()); name == effectResetFac) {
 								resetFaction = faction;

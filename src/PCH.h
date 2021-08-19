@@ -24,7 +24,7 @@ using namespace std::literals;
 namespace stl
 {
 	using SKSE::stl::adjust_pointer;
-	using SKSE::stl::is;
+	using SKSE::stl::is_in;
 	using SKSE::stl::to_underlying;
 
 	template <class T>
@@ -72,7 +72,7 @@ namespace ver
 	inline constexpr auto PapyrusUtil{ "PapyrusUtil"sv };
 	inline constexpr auto po3Tweaks{ "po3_Tweaks"sv };
 
-	inline constexpr auto PE{ "4.4"sv };
+	inline constexpr auto PE{ "4.5"sv };
 }
 
 #include "Version.h"

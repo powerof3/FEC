@@ -14,6 +14,7 @@ endmacro()
 
 set_from_environment(Skyrim64Path)
 set_from_environment(VCPKG_ROOT)
+set_from_environment(CommonLibSSEPath)
 
 if (DEFINED VCPKG_ROOT)
 	set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
@@ -78,14 +79,18 @@ endif ()
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
 
-set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_DEBUG_RUNTIME ON)
-
 
 # ---- Dependencies ----
 
-add_subdirectory("$ENV{CommonLibSSEPath}" CommonLibSSE)
+if (DEFINED CommonLibSSEPath AND NOT ${CommonLibSSEPath} STREQUAL "" AND IS_DIRECTORY ${CommonLibSSEPath})
+	add_subdirectory(${CommonLibSSEPath} CommonLibSSE)
+else ()
+	message(
+		FATAL_ERROR
+		"Variable CommonLibSSEPath is not set."
+	)
+endif ()
 
 find_package(Boost MODULE REQUIRED)
 find_package(spdlog REQUIRED CONFIG)

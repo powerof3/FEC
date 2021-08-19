@@ -118,7 +118,7 @@ namespace RESET
 {
 	inline auto constexpr effectResetFac = "FEC - Reset"sv;
 
-	class TESResetEventHandler : public RE::BSTEventSink<RE::TESResetEvent>
+	class TESResetEventHandler final : public RE::BSTEventSink<RE::TESResetEvent>
 	{
 	public:
 		static TESResetEventHandler* GetSingleton();

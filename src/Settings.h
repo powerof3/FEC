@@ -17,11 +17,11 @@ public:
 	void LoadSettings();
 	bool GetFormsFromMod();
 
-	bool cannotFindESP;
+	bool cannotFindESP{ false };
 
-	bool fixSubtitles;
-	bool spellEdits;
-	bool updateProperties;
+	bool fixSubtitles{ false };
+	bool spellEdits{ false };
+	bool updateProperties{ false };
 
 	std::vector<RE::Color> creatureColors;
 	std::vector<std::string> sunExclusions;
@@ -30,14 +30,14 @@ public:
 private:
 	Settings() = default;
 
-	std::tuple<const char*, const char*> GetColorType(std::uint32_t a_type);
+	static std::tuple<const char*, const char*> GetColorType(std::uint32_t a_type);
 
-	RE::FormID deathEffectsNPCID;
-	RE::FormID deathEffectsPCID;
+	RE::FormID deathEffectsNPCID{ 0 };
+	RE::FormID deathEffectsPCID{ 0 };
 
-	RE::FormID fireFXSID;
-	RE::FormID fireHeavyFXSID;
-	RE::FormID fireDisintegrateFXSID;
+	RE::FormID fireFXSID{ 0 };
+	RE::FormID fireHeavyFXSID{ 0 };
+	RE::FormID fireDisintegrateFXSID{ 0 };
 
 	std::string modName;
 };
