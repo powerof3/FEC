@@ -378,8 +378,8 @@ public:
 	{
 		std::vector<std::string> vec;
 
-		const auto papyrusExtenderHandle = GetModuleHandle(ver::PapyrusExtender.data());
-		const auto papyrusUtilsHandle = GetModuleHandle(ver::PapyrusUtil.data());
+		const auto papyrusExtenderHandle = GetModuleHandleA(ver::PapyrusExtender.data());
+		const auto papyrusUtilsHandle = GetModuleHandleA(ver::PapyrusUtil.data());
 
 		std::string message;
 		std::string info;
@@ -513,7 +513,7 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
             const auto settings = Settings::GetSingleton();
 			if (settings->GetFormsFromMod()) {
 				constexpr auto get_tweaks_fix = []() {
-					const auto po3TweaksHandle = GetModuleHandle(ver::po3Tweaks.data());
+					const auto po3TweaksHandle = GetModuleHandleA(ver::po3Tweaks.data());
 					if (po3TweaksHandle == nullptr) {
 						return false;
 					}
