@@ -598,7 +598,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
 #endif
 
 	spdlog::set_default_logger(std::move(log));
-	spdlog::set_pattern("[%H:%M:%S] [%l] %v"s);
+	spdlog::set_pattern("[%H:%M:%S] %v"s);
 
 	logger::info(FMT_STRING("{} v{}"), Version::PROJECT, Version::NAME);
 

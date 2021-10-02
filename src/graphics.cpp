@@ -11,7 +11,8 @@ namespace util
 
 		a_actor->VisitFactions([&result](RE::TESFaction* a_faction, std::int8_t a_rank) {
 			if (a_faction && a_rank > -1) {
-				if (std::string_view fac{ a_faction->GetName() }; std::ranges::find(effectDoneFac, fac) != effectDoneFac.end()) {
+				const std::string name(a_faction->GetName());
+				if (std::ranges::find(effectDoneFac, name) != effectDoneFac.end()) {
 					result = true;
 					return true;
 				}
@@ -144,7 +145,7 @@ namespace GRAPHICS
                         data->Insert(a_nodeName) :
                         data->Remove(a_nodeName);
 				} else if (a_toggle) {
-                    const std::vector<RE::BSFixedString> vec{ a_nodeName };
+					const std::vector<RE::BSFixedString> vec{ a_nodeName };
 					if (const auto newData = RE::NiStringsExtraData::Create(EXTRA::TOGGLE, vec); newData) {
 						a_root->AddExtraData(newData);
 					}
@@ -163,7 +164,7 @@ namespace GRAPHICS
                     data->Insert(a_node->name) :
                     data->Remove(a_node->name);
 			} else if (a_toggle) {
-                const std::vector<RE::BSFixedString> vec{ a_node->name };
+				const std::vector<RE::BSFixedString> vec{ a_node->name };
 				if (const auto newData = RE::NiStringsExtraData::Create(EXTRA::TOGGLE, vec); newData) {
 					a_root->AddExtraData(newData);
 				}
@@ -393,7 +394,7 @@ namespace ARMOR
 						RE::BSVisit::TraverseScenegraphGeometries(a_node, [&](RE::BSGeometry* a_geometry) -> RE::BSVisit::BSVisitControl {
 							auto result = RE::BSVisit::BSVisitControl::kContinue;
 
-                            const auto val = get_data(a_geometry);
+							const auto val = get_data(a_geometry);
 							if (!val.has_value()) {
 								return result;
 							}
@@ -469,21 +470,22 @@ namespace RESET
 			return RE::BSEventNotifyControl::kContinue;
 		}
 
-		if (util::is_in_FEC_faction(actor)) {
-			static RE::TESFaction* resetFaction;
-			if (!resetFaction) {
-				if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-					for (const auto& faction : dataHandler->GetFormArray<RE::TESFaction>()) {
-						if (faction && mod->IsFormInMod(faction->GetFormID())) {
-							if (const std::string name(faction->GetName()); name == effectResetFac) {
-								resetFaction = faction;
-								break;
-							}
+		static RE::TESFaction* resetFaction;
+		if (!resetFaction) {
+			if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
+				for (const auto& faction : dataHandler->GetFormArray<RE::TESFaction>()) {
+					if (faction && mod->IsFormInMod(faction->GetFormID())) {
+						if (const std::string name(faction->GetName()); name == effectResetFac) {
+							resetFaction = faction;
+							break;
 						}
 					}
 				}
 			}
-			if (resetFaction) {
+		}
+
+		if (resetFaction) {
+			if (util::is_in_FEC_faction(actor)) {
 				if (!actor->IsAIEnabled()) {
 					actor->EnableAI(true);
 				}
