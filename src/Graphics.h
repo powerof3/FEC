@@ -1,36 +1,27 @@
 #pragma once
 
-namespace util
+namespace ARMOR
 {
-	bool has_base_spell(RE::Actor* a_actor, RE::SpellItem* a_spell);
+	using Slot = RE::BIPED_MODEL::BipedObjectSlot;
+	using Biped = RE::BIPED_OBJECT;
+	using HeadPart = RE::BGSHeadPart::HeadPartType;
+	using ShaderType = RE::BSShaderMaterial::Feature;
 
-	template <class T, typename D>
-	void add_data_if_none(RE::NiAVObject* a_root, std::string_view a_type, D a_data)
+	inline constexpr std::array<Slot, 6> fxSlots = { Slot::kModMouth, Slot::kModChestPrimary, Slot::kModPelvisPrimary, Slot::kModLegRight, Slot::kModChestSecondary, Slot::kModArmRight };
+	inline constexpr std::array<Biped, 6> fxBiped = { Biped::kModMouth, Biped::kModChestPrimary, Biped::kModPelvisPrimary, Biped::kModLegRight, Biped::kModChestSecondary, Biped::kModArmRight };
+	inline constexpr std::array<HeadPart, 4> headparts = { HeadPart::kMisc, HeadPart::kFace, HeadPart::kEyes, HeadPart::kEyebrows };
+
+	namespace factions
 	{
-		if (const auto data = a_root->GetExtraData<T>(a_type); !data) {
-			const auto newData = T::Create(a_type, a_data);
-			if (newData) {
-				a_root->AddExtraData(newData);
-			}
-		}
+		inline constexpr std::array<std::string_view, 4> effects = {
+			"FEC - Charred"sv,
+			"FEC - Skeletonized"sv,
+			"FEC - Drained"sv,
+			"FEC - XRay"sv
+		};
 	}
-
-	inline constexpr std::array<std::string_view, 4> effectFac = {
-		"FEC - Charred"sv,
-		"FEC - Skeletonized"sv,
-		"FEC - Drained"sv,
-		"FEC - XRay"sv
-	};
-
-	inline constexpr std::array<std::string_view, 2> effectDoneFac = {
-		"FEC - Effects Done"sv,
-		"FEC - Temp Effects Done"sv
-	};
-
-	inline auto constexpr NPC = "ActorTypeNPC"sv;
-	inline auto constexpr IsBeast = "IsBeastRace"sv;
-
-	namespace EXTRA
+	
+	namespace extra
 	{
 		inline constexpr auto TOGGLE = "PO3_TOGGLE"sv;
 		inline constexpr auto SKIN_TINT = "PO3_SKINTINT"sv;
@@ -40,21 +31,35 @@ namespace util
 		inline constexpr auto HEADPART = "PO3_HEADPART"sv;
 		inline constexpr auto TXST = "PO3_TXST"sv;
 		inline constexpr auto SKIN_TXST = "PO3_SKINTXST"sv;
+
+		template <class T, typename D>
+		void add_data_if_none(RE::NiAVObject* a_root, std::string_view a_type, D a_data)
+		{
+			if (const auto data = a_root->GetExtraData<T>(a_type); !data) {
+				const auto newData = T::Create(a_type, a_data);
+				if (newData) {
+					a_root->AddExtraData(newData);
+				}
+			}
+		}
 	}
 
-	namespace GEO
+	namespace geometry
 	{
 		inline constexpr auto head = "fec_head"sv;
-		inline constexpr auto xrayHead = "fec_xray_head"sv;
+		inline constexpr auto headXRay = "fec_xray_head"sv;
 		inline constexpr auto body = "fec_body"sv;
 		inline constexpr auto bodyCharred = "fec_charred_body"sv;
 	}
 
-	namespace UNDERWEAR
+	namespace underwear
 	{
 		inline constexpr auto male0 = "MaleUnderwear_1"sv;
 		inline constexpr auto male1 = "MaleUnderwear"sv;
 		inline constexpr auto female = "FemaleUnderwear"sv;
+		inline constexpr auto himboBoxers = "HIMBO - Boxers"sv;
+		inline constexpr auto himboThong = "HIMBO - Thong"sv;
+		inline constexpr auto himboBriefs = "HIMBO - Briefs"sv;
 		inline constexpr auto bra0 = "Bra"sv;
 		inline constexpr auto bra1 = "BraBowTies1"sv;
 		inline constexpr auto bra2 = "BraBowTies2"sv;
@@ -62,53 +67,28 @@ namespace util
 		inline constexpr auto panty1 = "PantyBowTies1"sv;
 		inline constexpr auto panty2 = "PantyBowTies2"sv;
 
-		inline constexpr std::array<std::string_view, 8> underwears{
-			"MaleUnderwear_1"sv,
-			"MaleUnderwear"sv
-			"FemaleUnderwear"sv,
-			"Bra"sv,
-			"BraBowTies1"sv,
-			"BraBowTies2"sv,
-			"Panty"sv,
-			"PantyBowTies1"sv,
-			"PantyBowTies2"sv
+		inline constexpr std::array<std::string_view, 13> underwears{
+			male0,
+			male1,
+			female,
+			himboBoxers,
+			himboThong,
+			himboBriefs,
+			bra0,
+			bra1,
+			bra2,
+			panty0,
+			panty1,
+			panty2
 		};
 	}
-}
 
-namespace GRAPHICS
-{
-	using HeadPart = RE::BGSHeadPart::HeadPartType;
-
-	void SetSkinAlpha(RE::NiAVObject* a_root, float a_alpha, bool a_setData = true);
-
-	void SetSkinAlpha(RE::NiAVObject* a_root, RE::NiAVObject* a_node, float a_alpha, bool a_setData = true);
-
-	void ToggleNode(RE::NiAVObject* a_root, const RE::BSFixedString& a_nodeName, bool a_toggle, bool a_setData = true);
-
-	void ToggleNode(RE::NiAVObject* a_root, RE::NiAVObject* a_node, bool a_toggle, bool a_setData = true);
-
-	void SetHeadPartAlpha(RE::Actor* a_actor, RE::NiAVObject* a_root, HeadPart a_type, float a_alpha, bool a_setData = true);
-}
-
-namespace ARMOR
-{
-	using Slot = RE::BIPED_MODEL::BipedObjectSlot;
-	using Biped = RE::BIPED_OBJECT;
-	using HeadPart = RE::BGSHeadPart::HeadPartType;
-
-	inline constexpr std::array<Slot, 6> fxSlots = { Slot::kModMouth, Slot::kModChestPrimary, Slot::kModPelvisPrimary, Slot::kModLegRight, Slot::kModChestSecondary, Slot::kModArmRight };
-
-	inline constexpr std::array<Biped, 6> fxBiped = { Biped::kModMouth, Biped::kModChestPrimary, Biped::kModPelvisPrimary, Biped::kModLegRight, Biped::kModChestSecondary, Biped::kModArmRight };
-
-	inline constexpr std::array<HeadPart, 4> headparts = { HeadPart::kMisc, HeadPart::kFace, HeadPart::kEyes, HeadPart::kEyebrows };
-
-	namespace Attach
+	namespace ATTACH
 	{
 		void Install();
 	}
 
-	namespace Detach
+	namespace DETACH
 	{
 		void Install();
 	}
@@ -116,7 +96,15 @@ namespace ARMOR
 
 namespace RESET
 {
-	inline auto constexpr effectResetFac = "FEC - Reset"sv;
+	namespace factions
+	{
+		inline auto constexpr effectReset = "FEC - Reset"sv;
+		
+		inline constexpr std::array<std::string_view, 2> effectDone = {
+			"FEC - Effects Done"sv,
+			"FEC - Temp Effects Done"sv
+		};
+	}
 
 	class TESResetEventHandler final : public RE::BSTEventSink<RE::TESResetEvent>
 	{
@@ -134,4 +122,9 @@ namespace RESET
 		TESResetEventHandler& operator=(const TESResetEventHandler&) = delete;
 		TESResetEventHandler& operator=(TESResetEventHandler&&) = delete;
 	};
+}
+
+namespace GRAPHICS
+{
+	void Install();
 }

@@ -3,199 +3,204 @@
 extern RE::TESFile* mod;
 extern RE::SpellItem* deathEffectsAbility;
 
-namespace util
+namespace ARMOR
 {
-	bool is_in_FEC_faction(RE::Actor* a_actor)
+	struct detail
 	{
-		bool result = false;
+		static std::int32_t get_FEC_faction(RE::Actor* a_actor)
+		{
+			std::int32_t x = -1;
 
-		a_actor->VisitFactions([&result](RE::TESFaction* a_faction, std::int8_t a_rank) {
-			if (a_faction && a_rank > -1) {
-				const std::string name(a_faction->GetName());
-				if (std::ranges::find(effectDoneFac, name) != effectDoneFac.end()) {
-					result = true;
-					return true;
+			a_actor->VisitFactions([&x](RE::TESFaction* a_faction, std::int8_t a_rank) {
+				if (a_faction && a_rank > -1) {
+					const std::string name(a_faction->GetName());
+					for (std::uint32_t i = 0; i < factions::effects.size(); i++) {
+						if (name == factions::effects[i]) {
+							x = i;
+							return true;
+						}
+					}
+				}
+				return false;
+			});
+
+			return x;
+		}
+		
+		static void set_skin_alpha(RE::NiAVObject* a_root, float a_alpha, bool a_setData = true)
+		{
+			a_root->UpdateMaterialAlpha(a_alpha, true);
+
+			if (a_setData) {
+				if (a_alpha == 1.0f) {
+					a_root->RemoveExtraData(extra::SKIN_ALPHA);
+				} else {
+					extra::add_data_if_none<RE::NiBooleanExtraData>(a_root, extra::SKIN_ALPHA, true);
 				}
 			}
-			return false;
-		});
+		}
 
-		return result;
-	}
+		static void set_skin_alpha(RE::NiAVObject* a_root, RE::NiAVObject* a_node, float a_alpha, bool a_setData = true)
+		{
+			a_node->UpdateMaterialAlpha(a_alpha, true);
 
-	std::int32_t get_FEC_faction(RE::Actor* a_actor)
-	{
-		std::int32_t x = -1;
+			if (a_setData) {
+				if (a_alpha == 1.0f) {
+					a_root->RemoveExtraData(extra::SKIN_ALPHA);
+				} else {
+					extra::add_data_if_none<RE::NiBooleanExtraData>(a_root, extra::SKIN_ALPHA, true);
+				}
+			}
+		}
 
-		a_actor->VisitFactions([&x](RE::TESFaction* a_faction, std::int8_t a_rank) {
-			if (a_faction && a_rank > -1) {
-				const std::string name(a_faction->GetName());
-				for (std::uint32_t i = 0; i < effectFac.size(); i++) {
-					if (name == effectFac[i]) {
-						x = i;
-						return true;
+		static void toggle_node(RE::NiAVObject* a_root, const RE::BSFixedString& a_nodeName, const bool a_toggle, bool a_setData = true)
+		{
+			if (const auto object = a_root->GetObjectByName(a_nodeName); object) {
+				object->CullNode(a_toggle);
+
+				if (a_setData) {
+					if (const auto data = a_root->GetExtraData<RE::NiStringsExtraData>(extra::TOGGLE); data) {
+						a_toggle ?
+                            data->Insert(a_nodeName) :
+                            data->Remove(a_nodeName);
+					} else if (a_toggle) {
+						const std::vector<RE::BSFixedString> vec{ a_nodeName };
+						if (const auto newData = RE::NiStringsExtraData::Create(extra::TOGGLE, vec); newData) {
+							a_root->AddExtraData(newData);
+						}
 					}
 				}
 			}
-			return false;
-		});
-
-		return x;
-	}
-
-	bool has_base_spell(RE::Actor* a_actor, RE::SpellItem* a_spell)
-	{
-		bool hasSpell = false;
-
-		const auto base = a_actor->GetActorBase();
-		const auto spellList = base ? base->GetSpellList() : nullptr;
-
-		if (spellList && spellList->spells && spellList->numSpells > 0) {
-			std::span<RE::SpellItem*> span(spellList->spells, spellList->numSpells);
-			for (const auto& spell : span) {
-				if (spell == a_spell) {
-					hasSpell = true;
-					break;
-				}
-			}
 		}
 
-		return hasSpell;
-	}
-
-	std::optional<std::uint32_t> get_data(RE::NiAVObject* a_object)
-	{
-		if (!a_object->extra || a_object->extraDataSize == 0) {
-			return std::nullopt;
-		}
-
-		std::optional<std::uint32_t> result = std::nullopt;
-
-		std::span<RE::NiExtraData*> span(a_object->extra, a_object->extraDataSize);
-		for (const auto& extraData : span) {
-			if (result.has_value()) {
-				break;
-			}
-
-			if (extraData && !extraData->name.empty()) {
-				switch (string::const_hash(extraData->name)) {
-				case string::const_hash("EXTRA_HEAD"sv):
-					result = 0;
-					break;
-				case string::const_hash("EXTRA_BODY"sv):
-					result = 1;
-					break;
-				case string::const_hash("EXTRA_CHARRED_BODY"sv):
-					result = 2;
-					break;
-				default:
-					break;
-				}
-			}
-		}
-
-		return result;
-	}
-
-	bool has_keyword(RE::Actor* a_actor, std::string_view a_keyword)
-	{
-		const auto actorbase = a_actor->GetActorBase();
-		return actorbase && actorbase->HasKeyword(a_keyword);
-	}
-}
-
-namespace GRAPHICS
-{
-	using namespace util;
-
-	void SetSkinAlpha(RE::NiAVObject* a_root, float a_alpha, bool a_setData)
-	{
-		a_root->UpdateMaterialAlpha(a_alpha, true);
-
-		if (a_setData) {
-			if (a_alpha == 1.0f) {
-				a_root->RemoveExtraData(EXTRA::SKIN_ALPHA);
-			} else {
-				add_data_if_none<RE::NiBooleanExtraData>(a_root, EXTRA::SKIN_ALPHA, true);
-			}
-		}
-	}
-
-	void SetSkinAlpha(RE::NiAVObject* a_root, RE::NiAVObject* a_node, float a_alpha, bool a_setData)
-	{
-		a_node->UpdateMaterialAlpha(a_alpha, true);
-
-		if (a_setData) {
-			if (a_alpha == 1.0f) {
-				a_root->RemoveExtraData(EXTRA::SKIN_ALPHA);
-			} else {
-				add_data_if_none<RE::NiBooleanExtraData>(a_root, EXTRA::SKIN_ALPHA, true);
-			}
-		}
-	}
-
-	void ToggleNode(RE::NiAVObject* a_root, const RE::BSFixedString& a_nodeName, const bool a_toggle, bool a_setData)
-	{
-		if (const auto object = a_root->GetObjectByName(a_nodeName); object) {
-			object->CullNode(a_toggle);
+		static void toggle_node(RE::NiAVObject* a_root, RE::NiAVObject* a_node, bool a_toggle, bool a_setData = true)
+		{
+			a_node->CullNode(a_toggle);
 
 			if (a_setData) {
-				if (const auto data = a_root->GetExtraData<RE::NiStringsExtraData>(EXTRA::TOGGLE); data) {
+				if (const auto data = a_root->GetExtraData<RE::NiStringsExtraData>(extra::TOGGLE); data) {
 					a_toggle ?
-                        data->Insert(a_nodeName) :
-                        data->Remove(a_nodeName);
+                        data->Insert(a_node->name) :
+                        data->Remove(a_node->name);
 				} else if (a_toggle) {
-					const std::vector<RE::BSFixedString> vec{ a_nodeName };
-					if (const auto newData = RE::NiStringsExtraData::Create(EXTRA::TOGGLE, vec); newData) {
+					const std::vector<RE::BSFixedString> vec{ a_node->name };
+					if (const auto newData = RE::NiStringsExtraData::Create(extra::TOGGLE, vec); newData) {
 						a_root->AddExtraData(newData);
 					}
 				}
 			}
 		}
-	}
 
-	void ToggleNode(RE::NiAVObject* a_root, RE::NiAVObject* a_node, bool a_toggle, bool a_setData)
-	{
-		a_node->CullNode(a_toggle);
+		static void set_headpart_alpha(RE::Actor* a_actor, RE::NiAVObject* a_root, HeadPart a_type, float a_alpha, bool a_setData = true)
+		{
+			if (const auto object = a_actor->GetHeadPartObject(a_type); object) {
+				object->UpdateMaterialAlpha(a_alpha, false);
 
-		if (a_setData) {
-			if (const auto data = a_root->GetExtraData<RE::NiStringsExtraData>(EXTRA::TOGGLE); data) {
-				a_toggle ?
-                    data->Insert(a_node->name) :
-                    data->Remove(a_node->name);
-			} else if (a_toggle) {
-				const std::vector<RE::BSFixedString> vec{ a_node->name };
-				if (const auto newData = RE::NiStringsExtraData::Create(EXTRA::TOGGLE, vec); newData) {
-					a_root->AddExtraData(newData);
+				if (a_setData) {
+					const auto name = "PO3_HEADPART - " + std::to_string(stl::to_underlying(a_type));
+					if (a_alpha == 1.0f) {
+						a_root->RemoveExtraData(name);
+					} else {
+						extra::add_data_if_none<RE::NiIntegerExtraData>(a_root, name, stl::to_underlying(a_type));
+					}
 				}
 			}
 		}
-	}
 
-	void SetHeadPartAlpha(RE::Actor* a_actor, RE::NiAVObject* a_root, HeadPart a_type, float a_alpha, bool a_setData)
-	{
-		if (const auto object = a_actor->GetHeadPartObject(a_type); object) {
-			object->UpdateMaterialAlpha(a_alpha, false);
+		static void attach(RE::BipedAnim* a_biped, RE::NiAVObject* a_object)
+		{
+			if (a_biped && a_object) {
+				const auto ref = a_biped->actorRef.get();
+				const auto actor = ref ? ref->As<RE::Actor>() : nullptr;
 
-			if (a_setData) {
-				const auto name = "PO3_HEADPART - " + std::to_string(stl::to_underlying(a_type));
-				if (a_alpha == 1.0f) {
-					a_root->RemoveExtraData(name);
-				} else {
-					util::add_data_if_none<RE::NiIntegerExtraData>(a_root, name, stl::to_underlying(a_type));
+				if (!actor || actor->IsPlayerRef() || !actor->HasKeywordString("ActorTypeNPC"sv)) {
+					return;
+				}
+
+				const auto root = actor->Get3D(false);
+				if (!root) {
+					return;
+				}
+
+				const auto facType = get_FEC_faction(actor);
+				if (facType == -1) {
+					return;
+				}
+
+				if (std::ranges::any_of(fxBiped, [&](const auto& bipedSlot) {
+						const auto addon = a_biped->objects[bipedSlot].addon;
+						return addon && mod->IsFormInMod(addon->formID);
+					})) {
+					if (!a_object->name.empty()) {
+						switch (string::const_hash(a_object->name)) {
+						case string::const_hash(underwear::male0):
+						case string::const_hash(underwear::male1):
+						case string::const_hash(underwear::himboBoxers):
+						case string::const_hash(underwear::himboBriefs):
+						case string::const_hash(underwear::himboThong):
+						case string::const_hash(underwear::female):
+						case string::const_hash(underwear::bra0):
+						case string::const_hash(underwear::bra1):
+						case string::const_hash(underwear::bra2):
+						case string::const_hash(underwear::panty0):
+						case string::const_hash(underwear::panty1):
+						case string::const_hash(underwear::panty2):
+							{
+								if (facType <= 1) {
+									detail::toggle_node(root, a_object, true);
+								}
+							}
+							break;
+						default:
+							{
+								if (a_object->HasShaderType(ShaderType::kFaceGenRGBTint)) {
+									const auto alpha = facType == 3 ? 0.5f : 0.0f;
+									detail::set_skin_alpha(root, a_object, alpha);
+								}
+							}
+							break;
+						}
+					}
 				}
 			}
 		}
-	}
-}
 
-namespace ARMOR
-{
-	using ShaderType = RE::BSShaderMaterial::Feature;
+		static std::optional<std::uint32_t> get_data(RE::NiAVObject* a_object)
+		{
+			if (!a_object->extra || a_object->extraDataSize == 0) {
+				return std::nullopt;
+			}
 
-	using namespace util;
+			std::optional<std::uint32_t> result = std::nullopt;
 
-	namespace Attach
+			std::span<RE::NiExtraData*> span(a_object->extra, a_object->extraDataSize);
+			for (const auto& extraData : span) {
+				if (result) {
+					break;
+				}
+
+				if (extraData && !extraData->name.empty()) {
+					switch (string::const_hash(extraData->name)) {
+					case string::const_hash("EXTRA_HEAD"sv):
+						result = 0;
+						break;
+					case string::const_hash("EXTRA_BODY"sv):
+						result = 1;
+						break;
+					case string::const_hash("EXTRA_CHARRED_BODY"sv):
+						result = 2;
+						break;
+					default:
+						break;
+					}
+				}
+			}
+
+			return result;
+		}
+	};
+
+	namespace ATTACH
 	{
 		struct ProcessGeometry
 		{
@@ -203,57 +208,7 @@ namespace ARMOR
 			{
 				func(a_biped, a_object, a_dismemberInstance, a_slot, a_unk05);
 
-				if (a_biped && a_object) {
-					const auto ref = a_biped->actorRef.get();
-					const auto actor = ref ? ref->As<RE::Actor>() : nullptr;
-
-					if (!actor || actor->IsPlayerRef() || !has_keyword(actor, NPC)) {
-						return;
-					}
-
-					const auto facType = get_FEC_faction(actor);
-					if (facType == -1) {
-						return;
-					}
-
-					const auto root = actor->Get3D(false);
-					if (!root) {
-						return;
-					}
-
-					if (std::ranges::any_of(fxBiped, [&](const auto& bipedSlot) {
-							const auto addon = a_biped->objects[bipedSlot].addon;
-							return addon && mod->IsFormInMod(addon->formID);
-						})) {
-						if (!a_object->name.empty()) {
-							switch (string::const_hash(a_object->name)) {
-							case string::const_hash(UNDERWEAR::male0):
-							case string::const_hash(UNDERWEAR::male1):
-							case string::const_hash(UNDERWEAR::female):
-							case string::const_hash(UNDERWEAR::bra0):
-							case string::const_hash(UNDERWEAR::bra1):
-							case string::const_hash(UNDERWEAR::bra2):
-							case string::const_hash(UNDERWEAR::panty0):
-							case string::const_hash(UNDERWEAR::panty1):
-							case string::const_hash(UNDERWEAR::panty2):
-								{
-									if (facType <= 1) {
-										GRAPHICS::ToggleNode(root, a_object, true);
-									}
-								}
-								break;
-							default:
-								{
-									if (a_object->HasShaderType(ShaderType::kFaceGenRGBTint)) {
-										const auto alpha = facType == 3 ? 0.5f : 0.0f;
-										GRAPHICS::SetSkinAlpha(root, a_object, alpha);
-									}
-								}
-								break;
-							}
-						}
-					}
-				}
+				detail::attach(a_biped, a_object);
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
@@ -264,60 +219,7 @@ namespace ARMOR
 			{
 				func(a_biped, a_object, a_slot, a_unk04);
 
-				if (a_biped && a_object) {
-					const auto ref = a_biped->actorRef.get();
-					const auto actor = ref ? ref->As<RE::Actor>() : nullptr;
-
-					if (!actor || actor->IsPlayerRef() || !has_keyword(actor, NPC)) {
-						return;
-					}
-
-					const auto facType = get_FEC_faction(actor);
-					if (facType == -1) {
-						return;
-					}
-
-					const auto root = actor->Get3D(false);
-					if (!root) {
-						return;
-					}
-
-					if (std::ranges::any_of(fxBiped, [&](const auto& bipedSlot) {
-							const auto addon = a_biped->objects[bipedSlot].addon;
-							return addon && mod->IsFormInMod(addon->formID);
-						})) {
-						RE::BSVisit::TraverseScenegraphGeometries(a_object, [&](const RE::BSGeometry* a_geom) -> RE::BSVisit::BSVisitControl {
-							if (!a_geom->name.empty()) {
-								switch (string::const_hash(a_geom->name)) {
-								case string::const_hash(UNDERWEAR::male0):
-								case string::const_hash(UNDERWEAR::male1):
-								case string::const_hash(UNDERWEAR::female):
-								case string::const_hash(UNDERWEAR::bra0):
-								case string::const_hash(UNDERWEAR::bra1):
-								case string::const_hash(UNDERWEAR::bra2):
-								case string::const_hash(UNDERWEAR::panty0):
-								case string::const_hash(UNDERWEAR::panty1):
-								case string::const_hash(UNDERWEAR::panty2):
-									{
-										if (facType <= 1) {
-											GRAPHICS::ToggleNode(root, a_object, true);
-										}
-									}
-									break;
-								default:
-									{
-										if (a_object->HasShaderType(ShaderType::kFaceGenRGBTint)) {
-											const auto alpha = facType == 3 ? 0.5f : 0.0f;
-											GRAPHICS::SetSkinAlpha(root, a_object, alpha);
-										}
-									}
-									break;
-								}
-							}
-							return RE::BSVisit::BSVisitControl::kContinue;
-						});
-					}
-				}
+				detail::attach(a_biped, a_object);
 			}
 			static inline REL::Relocation<decltype(thunk)> func;
 		};
@@ -328,27 +230,27 @@ namespace ARMOR
 			{
 				func(a_npc, a_actor, a_node);
 
-				if (a_actor && !a_actor->IsPlayerRef() && has_keyword(a_actor, NPC)) {
-					const auto facType = get_FEC_faction(a_actor);
+				if (a_actor && !a_actor->IsPlayerRef() && a_actor->HasKeywordString("ActorTypeNPC"sv)) {
+					const auto facType = detail::get_FEC_faction(a_actor);
 					if (facType == -1) {
 						return;
 					}
 
-					const auto biped = a_actor->GetCurrentBiped().get();
+					const auto& biped = a_actor->GetCurrentBiped();
 					const auto root = a_actor->Get3D();
 					if (root && biped) {
 						const auto addon = biped->objects[Biped::kModMouth].addon;
 
 						if (addon && mod->IsFormInMod(addon->formID)) {
 							if (facType == 0 || facType == 1) {
-								GRAPHICS::ToggleNode(root, RE::FixedStrings::GetSingleton()->bsFaceGenNiNodeSkinned, true);
+								detail::toggle_node(root, RE::FixedStrings::GetSingleton()->bsFaceGenNiNodeSkinned, true);
 							} else if (facType == 2) {
 								for (auto& headpart : headparts) {
-									GRAPHICS::SetHeadPartAlpha(a_actor, root, headpart, 0.0f);
+									detail::set_headpart_alpha(a_actor, root, headpart, 0.0f);
 								}
 							} else {
-								if (has_keyword(a_actor, IsBeast)) {
-									GRAPHICS::SetHeadPartAlpha(a_actor, root, HeadPart::kMisc, 0.0f);
+								if (a_actor->HasKeywordString("IsBeastRace"sv)) {
+									detail::set_headpart_alpha(a_actor, root, HeadPart::kMisc, 0.0f);
 								}
 							}
 						}
@@ -373,7 +275,7 @@ namespace ARMOR
 		}
 	}
 
-	namespace Detach
+	namespace DETACH
 	{
 		struct UpdateCollision
 		{
@@ -385,7 +287,7 @@ namespace ARMOR
 					const auto user = a_node->GetUserData();
 					const auto actor = user ? user->As<RE::Actor>() : nullptr;
 
-					if (actor && !actor->IsPlayerRef() && has_keyword(actor, NPC)) {
+					if (actor && !actor->IsPlayerRef() && actor->HasKeywordString("ActorTypeNPC"sv)) {
 						const auto root = actor->Get3D(false);
 						if (!root) {
 							return;
@@ -394,33 +296,33 @@ namespace ARMOR
 						RE::BSVisit::TraverseScenegraphGeometries(a_node, [&](RE::BSGeometry* a_geometry) -> RE::BSVisit::BSVisitControl {
 							auto result = RE::BSVisit::BSVisitControl::kContinue;
 
-							const auto val = get_data(a_geometry);
-							if (!val.has_value()) {
+							const auto val = detail::get_data(a_geometry);
+							if (!val) {
 								return result;
 							}
 
-							switch (val.value()) {
+							switch (*val) {
 							case 0:
 								{
-									GRAPHICS::ToggleNode(root, RE::FixedStrings::GetSingleton()->bsFaceGenNiNodeSkinned, false, false);
+									detail::toggle_node(root, RE::FixedStrings::GetSingleton()->bsFaceGenNiNodeSkinned, false, false);
 									for (auto& headpart : headparts) {
-										GRAPHICS::SetHeadPartAlpha(actor, root, headpart, 1.0f, false);
+										detail::set_headpart_alpha(actor, root, headpart, 1.0f, false);
 									}
 									result = RE::BSVisit::BSVisitControl::kStop;
 								}
 								break;
 							case 1:
 								{
-									GRAPHICS::SetSkinAlpha(root, 1.0f, false);
+									detail::set_skin_alpha(root, 1.0f, false);
 									result = RE::BSVisit::BSVisitControl::kStop;
 								}
 								break;
 							case 2:
 								{
-									for (auto& name : UNDERWEAR::underwears) {
-										GRAPHICS::ToggleNode(root, name, false, false);
+									for (auto& name : underwear::underwears) {
+										detail::toggle_node(root, name, false, false);
 									}
-									GRAPHICS::SetSkinAlpha(root, 1.0f, false);
+									detail::set_skin_alpha(root, 1.0f, false);
 									result = RE::BSVisit::BSVisitControl::kStop;
 								}
 								break;
@@ -460,7 +362,7 @@ namespace RESET
 			return RE::BSEventNotifyControl::kContinue;
 		}
 
-		const auto object = evn->object;
+		const auto& object = evn->object;
 		if (!object) {
 			return RE::BSEventNotifyControl::kContinue;
 		}
@@ -470,12 +372,12 @@ namespace RESET
 			return RE::BSEventNotifyControl::kContinue;
 		}
 
-		static RE::TESFaction* resetFaction;
+		static RE::TESFaction* resetFaction = nullptr;
 		if (!resetFaction) {
 			if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 				for (const auto& faction : dataHandler->GetFormArray<RE::TESFaction>()) {
 					if (faction && mod->IsFormInMod(faction->GetFormID())) {
-						if (const std::string name(faction->GetName()); name == effectResetFac) {
+						if (const std::string name(faction->GetName()); name == factions::effectReset) {
 							resetFaction = faction;
 							break;
 						}
@@ -485,7 +387,24 @@ namespace RESET
 		}
 
 		if (resetFaction) {
-			if (util::is_in_FEC_faction(actor)) {
+			constexpr auto is_in_FEC_faction = [](RE::Actor* a_actor) {
+				bool result = false;
+
+				a_actor->VisitFactions([&result](RE::TESFaction* a_faction, std::int8_t a_rank) {
+					if (a_faction && a_rank > -1) {
+						const std::string name(a_faction->GetName());
+						if (std::ranges::find(factions::effectDone, name) != factions::effectDone.end()) {
+							result = true;
+							return true;
+						}
+					}
+					return false;
+				});
+
+				return result;
+			};
+
+			if (is_in_FEC_faction(actor)) {
 				if (!actor->IsAIEnabled()) {
 					actor->EnableAI(true);
 				}
@@ -494,5 +413,16 @@ namespace RESET
 		}
 
 		return RE::BSEventNotifyControl::kContinue;
+	}
+}
+
+void GRAPHICS::Install()
+{
+	ARMOR::ATTACH::Install();
+	ARMOR::DETACH::Install();
+
+	const auto sourceHolder = RE::ScriptEventSourceHolder::GetSingleton();
+	if (sourceHolder) {
+		sourceHolder->AddEventSink(RESET::TESResetEventHandler::GetSingleton());
 	}
 }

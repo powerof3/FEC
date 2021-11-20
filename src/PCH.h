@@ -6,8 +6,8 @@
 #include "SKSE/SKSE.h"
 
 #pragma warning(push)
-#include <frozen/map.h>
 #include <SimpleIni.h>
+#include <frozen/map.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <xbyak/xbyak.h>
 #pragma warning(pop)
@@ -40,30 +40,6 @@ namespace stl
 		REL::Relocation<std::uintptr_t> vtbl{ F::VTABLE[0] };
 		T::func = vtbl.write_vfunc(idx, T::thunk);
 	}
-}
-
-namespace formid
-{
-	inline constexpr RE::FormID falmerFaction = 0x0002997E;
-	inline constexpr RE::FormID giantFaction = 0x0004359A;
-	inline constexpr RE::FormID hagravenFaction = 0x0004359E;
-	inline constexpr RE::FormID rieklingFaction = 0x0301D9C9;
-
-	inline constexpr RE::FormID frostKeyword = 0x0001CEAE;
-
-	inline constexpr RE::FormID fireFXShader = 0x0001B212;
-	inline constexpr RE::FormID DLC1_SunCloakSpellHandFX = 0x0200A3BD;
-
-	inline constexpr std::array<RE::FormID, 3> sunHitFXS = { 0x02019C9D, 0x0200A3BB, 0x0200A3BC };
-	inline constexpr std::array<RE::FormID, 2> sunHitArt = { 0x0200A3B7, 0x0200A3B8 };
-}
-
-namespace str
-{
-	inline constexpr std::string_view embersXDPath = R"(EmbersHD\mx_fireatlas02.dds)";
-
-	inline constexpr auto MagicDamageFrost{ "MagicDamageFrost"sv };
-	inline constexpr auto MagicDamageSun{ "PO3_MagicDamageSun"sv };
 }
 
 namespace ver
