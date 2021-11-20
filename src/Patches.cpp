@@ -125,8 +125,8 @@ namespace MAINTENANCE
 
 	void Install()
 	{
-		REL::Relocation<std::uintptr_t> target{ REL::ID(36357), 0x1D1 };
-		stl::write_thunk_call<Ability::UpdateAVs>(target.address());
+		REL::Relocation<std::uintptr_t> target{ REL::Offset(0x5FBC50) };
+		stl::write_thunk_call<Ability::UpdateAVs>(target.address() + 0x1AA);
 
 		stl::write_vfunc<RE::Character, 0x0AE, Ability::ActorUpdateNoAI>();
 
