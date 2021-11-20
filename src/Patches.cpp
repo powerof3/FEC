@@ -285,23 +285,20 @@ namespace DISTRIBUTE
 		std::uint32_t count = 0;
 
 		if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-			auto& keywords = dataHandler->GetFormArray<RE::BGSKeyword>();
-
-			RE::BGSKeyword* sunKeyword;
-			auto it = std::ranges::find_if(keywords,
-				[&](const auto& kywd) -> bool { return kywd && kywd->formEditorID == str::MagicDamageSun; });
-			if (it != keywords.end()) {
-				sunKeyword = *it;
-			} else {
+			RE::BGSKeyword* sunKeyword = RE::TESForm::LookupByEditorID<RE::BGSKeyword>(str::MagicDamageSun);
+			if (!sunKeyword) {
 				const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
 				sunKeyword = factory ? factory->Create() : nullptr;
 				if (sunKeyword) {
-					sunKeyword->formEditorID = str::MagicDamageSun;
+					sunKeyword->SetFormEditorID(str::MagicDamageSun.data());
+					
+					auto& keywords = dataHandler->GetFormArray<RE::BGSKeyword>();
 					keywords.push_back(sunKeyword);
 				}
 			}
 
 			if (!sunKeyword) {
+				logger::error("unable to create sun keyword");
 				return;
 			}
 
@@ -319,17 +316,14 @@ namespace DISTRIBUTE
 					const auto castArt = a_mgef->data.castingArt;
 					isSunEffect = castArt && castArt->GetFormID() == formid::DLC1_SunCloakSpellHandFX;
 				}
-
-				if (isSunEffect) {
-					if (a_mgef->data.flags.none(Flag::kHostile) || a_mgef->data.flags.none(Flag::kDetrimental) || a_mgef->data.castingType == RE::MagicSystem::CastingType::kConstantEffect || a_mgef->data.flags.all(Flag::kNoHitEvent)) {
-						return false;
-					}
-				}
-				return false;
+				
+				return isSunEffect && !(a_mgef->data.flags.none(Flag::kHostile) || a_mgef->data.flags.none(Flag::kDetrimental) || a_mgef->data.castingType == RE::MagicSystem::CastingType::kConstantEffect || a_mgef->data.flags.all(Flag::kNoHitEvent));
 			};
 
 			for (const auto& mgef : dataHandler->GetFormArray<RE::EffectSetting>()) {
 				if (mgef && is_sun_effect(mgef)) {
+					logger::info(" {}", mgef->GetName());
+					
 					mgef->AddKeyword(sunKeyword);
 					count++;
 				}

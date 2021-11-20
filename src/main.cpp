@@ -180,12 +180,14 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 			if (!get_tweaks_fix()) {
 				MAINTENANCE::Install();
 			} else {
-				logger::info("powerofthree's tweaks mod found, skipping ability maintainer");
+				logger::info("powerofthree's Tweaks found, skipping ability maintainer");
 			}
 
 			GRAPHICS::Install();
 
 			PATCH::Install();
+
+			DISTRIBUTE::Install();
 		}
 		break;
 	default:
@@ -193,11 +195,17 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 	}
 }
 
-extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info)
+extern "C" __declspec(dllexport) constexpr auto SKSEPlugin_Version = []() {
+	SKSE::PluginVersionData v{};
+	v.pluginVersion = Version::MAJOR;
+	v.PluginName("FEC Helper plugin"sv);
+	v.AuthorName("powerofthree"sv);
+	v.CompatibleVersions({ SKSE::RUNTIME_1_6_318 });
+	return v;
+}();
+
+bool InitLogger()
 {
-#ifndef NDEBUG
-	auto sink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
-#else
 	auto path = logger::log_directory();
 	if (!path) {
 		return false;
@@ -205,42 +213,26 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
 
 	*path /= "po3_FEC.log"sv;
 	auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true);
-#endif
 
 	auto log = std::make_shared<spdlog::logger>("global log"s, std::move(sink));
 
-#ifndef NDEBUG
-	log->set_level(spdlog::level::trace);
-#else
 	log->set_level(spdlog::level::info);
 	log->flush_on(spdlog::level::info);
-#endif
 
 	spdlog::set_default_logger(std::move(log));
-	spdlog::set_pattern("[%H:%M:%S] %v"s);
+	spdlog::set_pattern("[%l] %v"s);
 
 	logger::info(FMT_STRING("{} v{}"), Version::PROJECT, Version::NAME);
-
-	a_info->infoVersion = SKSE::PluginInfo::kVersion;
-	a_info->name = "FEC Helper plugin";
-	a_info->version = Version::MAJOR;
-
-	if (a_skse->IsEditor()) {
-		logger::critical("Loaded in editor, marking as incompatible"sv);
-		return false;
-	}
-
-	const auto ver = a_skse->RuntimeVersion();
-	if (ver < SKSE::RUNTIME_1_5_39) {
-		logger::critical(FMT_STRING("Unsupported runtime version {}"), ver.string());
-		return false;
-	}
 
 	return true;
 }
 
 extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse)
 {
+	if (!InitLogger()) {
+		return false;
+	}
+	
 	logger::info("loaded");
 
 	SKSE::Init(a_skse);
