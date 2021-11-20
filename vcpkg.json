@@ -5,8 +5,8 @@
   "homepage": "https://github.com/powerof3/FEC",
   "license": "MIT",
   "dependencies": [
-    "boost-algorithm",
     "boost-stl-interfaces",
+    "rsm-binary-io",
     "frozen",
     "simpleini",
     "spdlog",
