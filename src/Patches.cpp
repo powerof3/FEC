@@ -298,7 +298,6 @@ namespace DISTRIBUTE
 			}
 
 			if (!sunKeyword) {
-				logger::error("unable to create sun keyword");
 				return;
 			}
 
@@ -321,9 +320,7 @@ namespace DISTRIBUTE
 			};
 
 			for (const auto& mgef : dataHandler->GetFormArray<RE::EffectSetting>()) {
-				if (mgef && is_sun_effect(mgef)) {
-					logger::info(" {}", mgef->GetName());
-					
+				if (mgef && is_sun_effect(mgef)) {				
 					mgef->AddKeyword(sunKeyword);
 					count++;
 				}
