@@ -268,7 +268,7 @@ namespace ARMOR
 			REL::Relocation<std::uintptr_t> attachArmorAddon{ REL::Offset(0x1D2420) };  //armor 2
 			stl::write_thunk_call<ProcessObject>(attachArmorAddon.address() + 0x1EA);
 
-			REL::Relocation<std::uintptr_t> processArmorAttach{ REL::ID(0x37C100) };  // head
+			REL::Relocation<std::uintptr_t> processArmorAttach{ REL::Offset(0x37C100) };  // head
 			stl::write_thunk_call<PerformNPCDismember>(processArmorAttach.address() + 0x562);
 
 			logger::info("Hooked armor attach.");
