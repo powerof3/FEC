@@ -213,7 +213,7 @@ void InitializeLog()
 		stl::report_and_fail("Failed to find standard logging directory"sv);
 	}
 
-	*path /= "po3_FEC.log"sv;
+	*path /= fmt::format(FMT_STRING("{}.log"), Version::PROJECT);
 	auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true);
 
 	auto log = std::make_shared<spdlog::logger>("global log"s, std::move(sink));
