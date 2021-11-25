@@ -262,13 +262,13 @@ namespace ARMOR
 
 		void Install()
 		{
-			REL::Relocation<std::uintptr_t> processAttachedGeometry{ REL::Offset(0x1D6740) };  //armor
+			REL::Relocation<std::uintptr_t> processAttachedGeometry{ REL::ID(15712) };  //armor
 			stl::write_thunk_call<ProcessGeometry>(processAttachedGeometry.address() + 0x72F);
 
-			REL::Relocation<std::uintptr_t> attachArmorAddon{ REL::Offset(0x1D2420) };  //armor 2
+			REL::Relocation<std::uintptr_t> attachArmorAddon{ REL::ID(15678) };  //armor 2
 			stl::write_thunk_call<ProcessObject>(attachArmorAddon.address() + 0x1EA);
 
-			REL::Relocation<std::uintptr_t> processArmorAttach{ REL::Offset(0x37C100) };  // head
+			REL::Relocation<std::uintptr_t> processArmorAttach{ REL::ID(24740) };  // head
 			stl::write_thunk_call<PerformNPCDismember>(processArmorAttach.address() + 0x562);
 
 			logger::info("Hooked armor attach.");
@@ -340,7 +340,7 @@ namespace ARMOR
 
 		void Install()
 		{
-			REL::Relocation<std::uintptr_t> target{ REL::Offset(0x1D1540) };  //removeNodeFromScene
+			REL::Relocation<std::uintptr_t> target{ REL::ID(15660) };  //removeNodeFromScene
 			stl::write_thunk_call<UpdateCollision>(target.address() + 0x1F);
 
 			logger::info("Hooked armor detach.");
