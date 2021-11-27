@@ -6,9 +6,12 @@
 #include "SKSE/SKSE.h"
 
 #pragma warning(push)
-#include <frozen/map.h>
 #include <SimpleIni.h>
+#include <frozen/map.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#ifndef NDEBUG
+#	include <spdlog/sinks/msvc_sink.h>
+#endif
 #include <xbyak/xbyak.h>
 #pragma warning(pop)
 
@@ -74,5 +77,4 @@ namespace ver
 
 	inline constexpr auto PE{ "4.5"sv };
 }
-
 #include "Version.h"
