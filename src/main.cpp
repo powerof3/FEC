@@ -30,6 +30,7 @@ namespace AbMaintain
 			}
 
 			if (hasSpell) {
+#ifndef SKYRIMVR
 				const auto activeEffects = a_actor->GetActiveEffectList();
 				if (activeEffects) {
 					for (const auto& ae : *activeEffects) {
@@ -39,6 +40,18 @@ namespace AbMaintain
 					}
 				}
 				return true;
+#else
+				//VR work around because GetActiveEffectList does not return a BSSimpleList like in SSE
+				bool result = true;
+				a_actor->VisitActiveEffects([&](RE::ActiveEffect* ae) -> RE::BSContainer::ForEachResult {
+					if (ae && ae->spell == deathEffectsAbility) {
+						result = false;
+						return RE::BSContainer::ForEachResult::kStop;
+					}
+					return RE::BSContainer::ForEachResult::kContinue;
+				});
+				return result;
+#endif
 			}
 
 			return false;
@@ -65,9 +78,9 @@ namespace AbMaintain
 
 	struct ActorUpdateNoAI
 	{
-		static void thunk(RE::Character* a_this)
+		static void thunk(RE::Character* a_this, float a_delta)
 		{
-			func(a_this);
+			func(a_this, a_delta);
 
 			detail::apply_ab(a_this);
 		}
@@ -77,13 +90,21 @@ namespace AbMaintain
 	void Install()
 	{
 		REL::Relocation<std::uintptr_t> target{ REL::ID(36357), 0x1D1 };
-		stl::write_thunk_call<UpdateAVs>(target.address());
+		::stl::write_thunk_call<UpdateAVs>(target.address());
 
-		stl::write_vfunc<RE::Character, 0x0AE, ActorUpdateNoAI>();
+		::stl::write_vfunc<RE::Character,
+#ifndef SKYRIMVR
+			0x0AE
+#else
+			0x0B0
+#endif
+			,
+			ActorUpdateNoAI>();
 	}
 }
 
 //PATCHES
+using namespace ::stl;
 class PATCH
 {
 public:
@@ -235,8 +256,8 @@ public:
 					return raceName.find("Child") == std::string::npos;
 				}
 
-			    if (a_npc->HasKeyword("ActorTypeCreature"sv) || a_npc->HasKeyword("ActorTypeAnimal"sv)) {
-                    return !(a_npc->HasKeyword("ActorTypeDragon"sv) || a_npc->HasKeyword("ActorTypeDaedra"sv));
+				if (a_npc->HasKeyword("ActorTypeCreature"sv) || a_npc->HasKeyword("ActorTypeAnimal"sv)) {
+					return !(a_npc->HasKeyword("ActorTypeDragon"sv) || a_npc->HasKeyword("ActorTypeDaedra"sv));
 				}
 
 				return false;
@@ -278,7 +299,7 @@ public:
 			}
 
 			constexpr auto is_sun_effect = [](const RE::EffectSetting* a_mgef, const std::vector<std::string>& a_exclusions) {
-				using namespace formid;
+				using namespace ::formid;
 				using Flag = RE::EffectSetting::EffectSettingData::Flag;
 
 				const auto hitFXS = a_mgef->data.effectShader;
@@ -298,12 +319,12 @@ public:
 						return false;
 					}
 					const std::string name(a_mgef->GetName());
-                    return std::ranges::find(a_exclusions, name) == a_exclusions.end();
+					return std::ranges::find(a_exclusions, name) == a_exclusions.end();
 				}
 				return false;
 			};
 
-            const auto settings = Settings::GetSingleton();
+			const auto settings = Settings::GetSingleton();
 			for (const auto& mgef : dataHandler->GetFormArray<RE::EffectSetting>()) {
 				if (mgef && is_sun_effect(mgef, settings->sunExclusions)) {
 					mgef->AddKeyword(sunKeyword);
@@ -418,8 +439,8 @@ Required PapyrusExtender version : )" +
 				          std::string(ver::PE) +
 				          " or higher";
 			} else {
-                const std::string currentPE(peGetVersion());
-                const auto compare = compareVersion(currentPE);
+				const std::string currentPE(peGetVersion());
+				const auto compare = compareVersion(currentPE);
 
 				if (compare == -1) {
 					logger::error("PapyrusExtender SSE plugin version too low");
@@ -469,12 +490,12 @@ Click Ok to continue, or Cancel to quit the game)";
 private:
 	static auto compareVersion(const std::string& a_value) -> std::int32_t
 	{
-        std::uint32_t major1 = 0;
-        std::uint32_t minor1 = 0;
-        std::uint32_t major2 = 0;
-        std::uint32_t minor2 = 0;
+		std::uint32_t major1 = 0;
+		std::uint32_t minor1 = 0;
+		std::uint32_t major2 = 0;
+		std::uint32_t minor2 = 0;
 
-        sscanf_s(a_value.data(), "%u.%u", &major1, &minor1);
+		sscanf_s(a_value.data(), "%u.%u", &major1, &minor1);
 		sscanf_s(ver::PE.data(), "%u.%u", &major2, &minor2);
 
 		if (major1 < major2) {
@@ -510,7 +531,7 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
-            const auto settings = Settings::GetSingleton();
+			const auto settings = Settings::GetSingleton();
 			if (settings->GetFormsFromMod()) {
 				constexpr auto get_tweaks_fix = []() {
 					const auto po3TweaksHandle = GetModuleHandleA(ver::po3Tweaks.data());
@@ -612,7 +633,13 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
 	}
 
 	const auto ver = a_skse->RuntimeVersion();
-	if (ver < SKSE::RUNTIME_1_5_39) {
+	if (ver <
+#ifndef SKYRIMVR
+		SKSE::RUNTIME_1_5_39
+#else
+		SKSE::RUNTIME_VR_1_4_15
+#endif
+	) {
 		logger::critical(FMT_STRING("Unsupported runtime version {}"), ver.string());
 		return false;
 	}

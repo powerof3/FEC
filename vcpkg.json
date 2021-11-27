@@ -7,6 +7,7 @@
   "dependencies": [
     "boost-algorithm",
     "boost-stl-interfaces",
+	  "rsm-binary-io",
     "frozen",
     "simpleini",
     "spdlog",

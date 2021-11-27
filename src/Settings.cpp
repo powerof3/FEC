@@ -13,7 +13,7 @@ Settings* Settings::GetSingleton()
 
 void ReadFormIDEntry(CSimpleIniA& a_ini, RE::FormID& a_formID, const char* a_entry, const char* a_default)
 {
-    const std::string str = a_ini.GetValue("FormIDs", a_entry, a_default);
+	const std::string str = a_ini.GetValue("FormIDs", a_entry, a_default);
 	a_ini.SetValue("FormIDs", a_entry, str.c_str(), "", true);
 
 	a_formID = string::lexical_cast<RE::FormID>(str, true);
@@ -52,10 +52,10 @@ void Settings::LoadSettings()
 
 	try {
 		creatureColors.reserve(4);
-		for (auto i = stl::to_underlying(kGiant); i < stl::to_underlying(kTotal); i++) {
+		for (auto i = ::stl::to_underlying(kGiant); i < ::stl::to_underlying(kTotal); i++) {
 			auto [name, defColor] = GetColorType(i);
 
-            const auto color = ini.GetValue("Poison", name, defColor);
+			const auto color = ini.GetValue("Poison", name, defColor);
 			ini.SetValue("Poison", name, color, "", true);
 
 			creatureColors.emplace_back(string::lexical_cast<std::uint32_t>(color, true));
@@ -83,11 +83,15 @@ bool Settings::GetFormsFromMod()
 	if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 		deathEffectsAbility = dataHandler->LookupForm<RE::SpellItem>(deathEffectsNPCID, modName);
 		deathEffectsPCAbility = dataHandler->LookupForm<RE::SpellItem>(deathEffectsPCID, modName);
-
+#ifndef SKYRIMVR
 		mod = const_cast<RE::TESFile*>(dataHandler->LookupLoadedModByName(modName));
 		if (!mod) {
 			mod = const_cast<RE::TESFile*>(dataHandler->LookupLoadedLightModByName(modName));
 		}
+#else
+		//VR does not have light mods. Also, ctd using LookupLoadedModByName(modName)
+		mod = const_cast<RE::TESFile*>(dataHandler->LookupModByName(modName));
+#endif
 
 		if (!deathEffectsAbility || !deathEffectsPCAbility || !mod) {
 			cannotFindESP = true;

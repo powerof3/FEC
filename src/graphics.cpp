@@ -178,11 +178,11 @@ namespace GRAPHICS
 			object->UpdateMaterialAlpha(a_alpha, false);
 
 			if (a_setData) {
-				const auto name = "PO3_HEADPART - " + std::to_string(stl::to_underlying(a_type));
+				const auto name = "PO3_HEADPART - " + std::to_string(::stl::to_underlying(a_type));
 				if (a_alpha == 1.0f) {
 					a_root->RemoveExtraData(name);
 				} else {
-					util::add_data_if_none<RE::NiIntegerExtraData>(a_root, name, stl::to_underlying(a_type));
+					util::add_data_if_none<RE::NiIntegerExtraData>(a_root, name, ::stl::to_underlying(a_type));
 				}
 			}
 		}
@@ -360,14 +360,26 @@ namespace ARMOR
 
 		void Install()
 		{
-			REL::Relocation<std::uintptr_t> processAttachedGeometry{ REL::ID(15535), 0x79A };  //armor
-			stl::write_thunk_call<ProcessGeometry>(processAttachedGeometry.address());
+			REL::Relocation<std::uintptr_t> processAttachedGeometry{ REL::ID(15535),
+#ifndef SKYRIMVR
+				0x79A
+#else
+				0x7D4
+#endif
+			};  //armor
+			::stl::write_thunk_call<ProcessGeometry>(processAttachedGeometry.address());
 
-			REL::Relocation<std::uintptr_t> attachArmorAddon{ REL::ID(15501), 0x1EA };  //armor 2
-			stl::write_thunk_call<ProcessObject>(attachArmorAddon.address());
+			REL::Relocation<std::uintptr_t> attachArmorAddon{ REL::ID(15501),
+#ifndef SKYRIMVR
+				0x1EA
+#else
+				0x1E7
+#endif
+			};  //armor 2
+			::stl::write_thunk_call<ProcessObject>(attachArmorAddon.address());
 
 			REL::Relocation<std::uintptr_t> processArmorAttach{ REL::ID(24236), 0x33E };  // head
-			stl::write_thunk_call<PerformNPCDismember>(processArmorAttach.address());
+			::stl::write_thunk_call<PerformNPCDismember>(processArmorAttach.address());
 
 			logger::info("Hooked armor attach.");
 		}
@@ -383,7 +395,11 @@ namespace ARMOR
 
 				if (a_node && !a_node->AsFadeNode()) {
 					const auto user = a_node->GetUserData();
-					const auto actor = user ? user->As<RE::Actor>() : nullptr;
+					RE::Actor* actor = nullptr;
+					if (user) {
+						logger::debug("Checking user {}", user->GetName());
+						actor = user->GetActorOwner() ? user->GetActorOwner()->As<RE::Actor>() : nullptr;
+					}
 
 					if (actor && !actor->IsPlayerRef() && has_keyword(actor, NPC)) {
 						const auto root = actor->Get3D(false);
@@ -439,7 +455,7 @@ namespace ARMOR
 		void Install()
 		{
 			REL::Relocation<std::uintptr_t> target{ REL::ID(15495), 0x1F };  //removeNodeFromScene
-			stl::write_thunk_call<UpdateCollision>(target.address());
+			::stl::write_thunk_call<UpdateCollision>(target.address());
 
 			logger::info("Hooked armor detach.");
 		}
