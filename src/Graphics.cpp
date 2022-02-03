@@ -26,7 +26,7 @@ namespace ARMOR
 
 			return x;
 		}
-		
+
 		static void set_skin_alpha(RE::NiAVObject* a_root, float a_alpha, bool a_setData = true)
 		{
 			a_root->UpdateMaterialAlpha(a_alpha, true);
@@ -131,34 +131,12 @@ namespace ARMOR
 						const auto addon = a_biped->objects[bipedSlot].addon;
 						return addon && mod->IsFormInMod(addon->formID);
 					})) {
-					if (!a_object->name.empty()) {
-						switch (string::const_hash(a_object->name)) {
-						case string::const_hash(underwear::male0):
-						case string::const_hash(underwear::male1):
-						case string::const_hash(underwear::himboBoxers):
-						case string::const_hash(underwear::himboBriefs):
-						case string::const_hash(underwear::himboThong):
-						case string::const_hash(underwear::female):
-						case string::const_hash(underwear::bra0):
-						case string::const_hash(underwear::bra1):
-						case string::const_hash(underwear::bra2):
-						case string::const_hash(underwear::panty0):
-						case string::const_hash(underwear::panty1):
-						case string::const_hash(underwear::panty2):
-							{
-								if (facType <= 1) {
-									detail::toggle_node(root, a_object, true);
-								}
-							}
-							break;
-						default:
-							{
-								if (a_object->HasShaderType(ShaderType::kFaceGenRGBTint)) {
-									const auto alpha = facType == 3 ? 0.5f : 0.0f;
-									detail::set_skin_alpha(root, a_object, alpha);
-								}
-							}
-							break;
+					if (const auto name = a_object->name; !name.empty()) {
+						if (std::ranges::find(underwear::underwears, name.c_str()) != underwear::underwears.end() && facType <= 1) {
+                            toggle_node(root, a_object, true);
+						} else if (a_object->HasShaderType(ShaderType::kFaceGenRGBTint)) {
+							const auto alpha = facType == 3 ? 0.5f : 0.0f;
+                            set_skin_alpha(root, a_object, alpha);
 						}
 					}
 				}
@@ -237,8 +215,7 @@ namespace ARMOR
 					}
 
 					const auto& biped = a_actor->GetCurrentBiped();
-					const auto root = a_actor->Get3D();
-					if (root && biped) {
+                    if (const auto root = a_actor->Get3D(); root && biped) {
 						const auto addon = biped->objects[Biped::kModMouth].addon;
 
 						if (addon && mod->IsFormInMod(addon->formID)) {
@@ -421,8 +398,7 @@ void GRAPHICS::Install()
 	ARMOR::ATTACH::Install();
 	ARMOR::DETACH::Install();
 
-	const auto sourceHolder = RE::ScriptEventSourceHolder::GetSingleton();
-	if (sourceHolder) {
+    if (const auto sourceHolder = RE::ScriptEventSourceHolder::GetSingleton()) {
 		sourceHolder->AddEventSink(RESET::TESResetEventHandler::GetSingleton());
 	}
 }
