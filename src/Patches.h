@@ -13,10 +13,10 @@ namespace MAINTENANCE
 		TESLoadGameEventHandler() = default;
 		TESLoadGameEventHandler(const TESLoadGameEventHandler&) = delete;
 		TESLoadGameEventHandler(TESLoadGameEventHandler&&) = delete;
-		virtual ~TESLoadGameEventHandler() = default;
+		~TESLoadGameEventHandler() override = default;
 
-		auto operator=(const TESLoadGameEventHandler&) -> TESLoadGameEventHandler& = delete;
-		auto operator=(TESLoadGameEventHandler&&) -> TESLoadGameEventHandler& = delete;
+		TESLoadGameEventHandler& operator=(const TESLoadGameEventHandler&) = delete;
+		TESLoadGameEventHandler& operator=(TESLoadGameEventHandler&&) = delete;
 	};
 
 	void Install();
@@ -32,8 +32,16 @@ namespace PATCH
 		inline constexpr RE::FormID rieklingFaction = 0x0401D9C9;
 
 		inline constexpr RE::FormID fireFXShader = 0x0001B212;
-		
+
 		inline constexpr std::array<RE::FormID, 3> FEC_fireFXS = { 0x198F3, 0xA5038, 0x66B722 };
+	}
+
+	namespace color
+	{
+		inline constexpr RE::Color falmer = 0x8F7F75;
+		inline constexpr RE::Color giant = 0x786f6A;
+		inline constexpr RE::Color hagraven = 0x72615B;
+		inline constexpr RE::Color riekling = 0x374655;
 	}
 
 	namespace str
@@ -41,7 +49,7 @@ namespace PATCH
 		inline constexpr auto embersXDPath = R"(EmbersHD\mx_fireatlas02.dds)"sv;
 		inline constexpr auto MagicDamageFrost{ "MagicDamageFrost"sv };
 	}
-	
+
 	void Install();
 };
 
@@ -59,6 +67,6 @@ namespace DISTRIBUTE
 	{
 		inline constexpr auto MagicDamageSun{ "PO3_MagicDamageSun"sv };
 	}
-	
+
 	void Install();
 };

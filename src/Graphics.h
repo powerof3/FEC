@@ -7,13 +7,13 @@ namespace ARMOR
 	using HeadPart = RE::BGSHeadPart::HeadPartType;
 	using ShaderType = RE::BSShaderMaterial::Feature;
 
-	inline constexpr std::array<Slot, 6> fxSlots = { Slot::kModMouth, Slot::kModChestPrimary, Slot::kModPelvisPrimary, Slot::kModLegRight, Slot::kModChestSecondary, Slot::kModArmRight };
-	inline constexpr std::array<Biped, 6> fxBiped = { Biped::kModMouth, Biped::kModChestPrimary, Biped::kModPelvisPrimary, Biped::kModLegRight, Biped::kModChestSecondary, Biped::kModArmRight };
-	inline constexpr std::array<HeadPart, 4> headparts = { HeadPart::kMisc, HeadPart::kFace, HeadPart::kEyes, HeadPart::kEyebrows };
+	inline constexpr std::array fxSlots = { Slot::kModMouth, Slot::kModChestPrimary, Slot::kModPelvisPrimary, Slot::kModLegRight, Slot::kModChestSecondary, Slot::kModArmRight };
+	inline constexpr std::array fxBiped = { Biped::kModMouth, Biped::kModChestPrimary, Biped::kModPelvisPrimary, Biped::kModLegRight, Biped::kModChestSecondary, Biped::kModArmRight };
+	inline constexpr std::array headparts = { HeadPart::kMisc, HeadPart::kFace, HeadPart::kEyes, HeadPart::kEyebrows };
 
 	namespace factions
 	{
-		inline constexpr std::array<std::string_view, 4> effects = {
+		inline constexpr std::array effects = {
 			"FEC - Charred"sv,
 			"FEC - Skeletonized"sv,
 			"FEC - Drained"sv,
@@ -36,8 +36,7 @@ namespace ARMOR
 		void add_data_if_none(RE::NiAVObject* a_root, std::string_view a_type, D a_data)
 		{
 			if (const auto data = a_root->GetExtraData<T>(a_type); !data) {
-				const auto newData = T::Create(a_type, a_data);
-				if (newData) {
+                if (const auto newData = T::Create(a_type, a_data)) {
 					a_root->AddExtraData(newData);
 				}
 			}
@@ -100,7 +99,7 @@ namespace RESET
 	{
 		inline auto constexpr effectReset = "FEC - Reset"sv;
 		
-		inline constexpr std::array<std::string_view, 2> effectDone = {
+		inline constexpr std::array effectDone = {
 			"FEC - Effects Done"sv,
 			"FEC - Temp Effects Done"sv
 		};
@@ -117,7 +116,7 @@ namespace RESET
 		TESResetEventHandler() = default;
 		TESResetEventHandler(const TESResetEventHandler&) = delete;
 		TESResetEventHandler(TESResetEventHandler&&) = delete;
-		virtual ~TESResetEventHandler() = default;
+        ~TESResetEventHandler() override = default;
 
 		TESResetEventHandler& operator=(const TESResetEventHandler&) = delete;
 		TESResetEventHandler& operator=(TESResetEventHandler&&) = delete;
