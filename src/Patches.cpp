@@ -130,8 +130,7 @@ namespace MAINTENANCE
 
 		stl::write_vfunc<RE::Character, 0x0AE, Ability::ActorUpdateNoAI>();
 
-		const auto sourceHolder = RE::ScriptEventSourceHolder::GetSingleton();
-		if (sourceHolder) {
+        if (const auto sourceHolder = RE::ScriptEventSourceHolder::GetSingleton()) {
 			sourceHolder->AddEventSink(TESLoadGameEventHandler::GetSingleton());
 		}
 	}
@@ -198,16 +197,16 @@ namespace PATCH
 				if (actorbase && !actorbase->HasKeyword("ActorTypeNPC"sv)) {
 					if (actorbase->IsInFaction(falmerFaction)) {
 						falmerCount++;
-						actorbase->bodyTintColor = 0x8F7F75;
+						actorbase->bodyTintColor = color::falmer;
 					} else if (actorbase->IsInFaction(giantFaction)) {
 						giantCount++;
-						actorbase->bodyTintColor = 0x786f6A;
+						actorbase->bodyTintColor = color::giant;
 					} else if (actorbase->IsInFaction(hagravenFaction)) {
 						hagravenCount++;
-						actorbase->bodyTintColor = 0x72615B;
+						actorbase->bodyTintColor = color::hagraven;
 					} else if (actorbase->IsInFaction(rieklingFaction)) {
 						rieklingCount++;
-						actorbase->bodyTintColor = 0x374655;
+						actorbase->bodyTintColor = color::riekling;
 					}
 				}
 			}
@@ -259,8 +258,8 @@ namespace DISTRIBUTE
 
 				if (a_npc->HasKeyword("ActorTypeNPC"sv)) {
 					const auto race = a_npc->GetRace();
-					const std::string raceName = race ? race->GetFormEditorID() : "";
-					return raceName.find("Child") == std::string::npos;
+					const std::string raceName = race ? race->GetFormEditorID() : std::string();
+					return !raceName.contains("Child");
 				}
 
 				if (a_npc->HasKeyword("ActorTypeCreature"sv) || a_npc->HasKeyword("ActorTypeAnimal"sv)) {
@@ -285,7 +284,7 @@ namespace DISTRIBUTE
 		std::uint32_t count = 0;
 
 		if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-			RE::BGSKeyword* sunKeyword = RE::TESForm::LookupByEditorID<RE::BGSKeyword>(str::MagicDamageSun);
+            auto sunKeyword = RE::TESForm::LookupByEditorID<RE::BGSKeyword>(str::MagicDamageSun);
 			if (!sunKeyword) {
 				const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
 				sunKeyword = factory ? factory->Create() : nullptr;
