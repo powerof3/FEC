@@ -33,7 +33,7 @@ namespace PATCH
 
 		inline constexpr RE::FormID fireFXShader = 0x0001B212;
 
-		inline constexpr std::array<RE::FormID, 3> FEC_fireFXS = { 0x198F3, 0xA5038, 0x66B722 };
+		inline constexpr std::array<RE::FormID, 3> FEC_fireFXS = { 0x806, 0x826, 0x82F };
 	}
 
 	namespace color

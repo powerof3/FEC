@@ -46,7 +46,7 @@ namespace ver
 	inline constexpr auto PapyrusUtil{ "PapyrusUtil"sv };
 	inline constexpr auto po3Tweaks{ "po3_Tweaks"sv };
 
-	inline constexpr auto PE{ "5.0"sv };
+	inline constexpr auto PE{ "4.5"sv };
 }
 
 #include "Version.h"

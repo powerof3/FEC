@@ -223,7 +223,7 @@ namespace PATCH
 			for (auto& formID : formid::FEC_fireFXS) {
 				fireFXS.emplace_back(RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESEffectShader>(formID, "FEC.esp"));
 			}
-			for (auto& shader : fireFXS) {
+			for (const auto& shader : fireFXS) {
 				if (shader) {
 					shader->data.flags.reset(RE::EffectShaderData::Flags::kParticleGreyscaleColor);
 					shader->particleShaderTexture.textureName = defFireFXS->particleShaderTexture.textureName;

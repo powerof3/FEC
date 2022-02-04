@@ -97,7 +97,7 @@ Current PapyrusExtender version : )" +
 			message += R"(
 
 
-Click Ok to continue, or Cancel to quit the game)";
+Click Yes to quit the game, or No to continue playing)";
 			vec.push_back(message);
 			vec.push_back(info);
 		}
@@ -140,7 +140,7 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 		{
 			auto vec = RequirementsCheck::GetError();
 			if (!vec.empty() && vec.size() == 2) {
-				auto id = WinAPI::MessageBox(nullptr, vec[0].c_str(), vec[1].c_str(), 0x000001);
+				auto id = WinAPI::MessageBox(nullptr, vec[0].c_str(), vec[1].c_str(), 0x00000004);
 				if (id == 2) {
 					std::_Exit(EXIT_FAILURE);
 				}
@@ -150,13 +150,18 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
 			if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-				mod = const_cast<RE::TESFile*>(dataHandler->LookupLoadedModByName("FEC.esp"));
+				mod = const_cast<RE::TESFile*>(dataHandler->LookupModByName("FEC.esp"));
 
-				deathEffectsAbility = dataHandler->LookupForm<RE::SpellItem>(0x0067FB28, "FEC.esp");
-				deathEffectsPCAbility = dataHandler->LookupForm<RE::SpellItem>(0x00675924, "FEC.esp");
+				if (!mod) {
+					logger::error("unable to find FEC.esp");
+				}
 
-				if (!mod || !deathEffectsAbility || !deathEffectsPCAbility) {
-					return;
+				deathEffectsAbility = dataHandler->LookupForm<RE::SpellItem>(0x8EC, "FEC.esp");
+				deathEffectsPCAbility = dataHandler->LookupForm<RE::SpellItem>(0x8E9, "FEC.esp");
+
+				if (!deathEffectsAbility || !deathEffectsPCAbility) {
+					logger::error("unable to find death effect abilities");
+				    return;
 				}
 			}
 
