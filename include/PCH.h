@@ -1,13 +1,14 @@
 #pragma once
 
 #define NOMB
+#define NOMINMAX
 
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
 
 #pragma warning(push)
 #include <SimpleIni.h>
-#include <frozen/map.h>
+#include <robin_hood.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <xbyak/xbyak.h>
 #pragma warning(pop)
@@ -40,13 +41,14 @@ namespace stl
 	}
 }
 
-namespace ver
-{
-	inline constexpr auto PapyrusExtender{ "po3_PapyrusExtender"sv };
-	inline constexpr auto PapyrusUtil{ "PapyrusUtil"sv };
-	inline constexpr auto po3Tweaks{ "po3_Tweaks"sv };
+#ifdef SKYRIM_AE
+#	define OFFSET(se, ae) ae
+#else
+#	define OFFSET(se, ae) se
+#endif
 
-	inline constexpr auto PE{ "4.5"sv };
-}
+#define BIND(a_method, ...) a_vm->RegisterFunction(#a_method##sv, obj, a_method __VA_OPT__(, ) __VA_ARGS__)
+#define BIND_EVENT(a_method, ...) a_vm->RegisterFunction(#a_method##sv, obj, a_method __VA_OPT__(, ) __VA_ARGS__)
 
 #include "Version.h"
+#include "Globals.h"

@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.20)
+set(NAME "po3_FEC")
+set(VERSION 5.0.0)
+set(AE_VERSION 1)
 
 # ---- Options ----
 
 option(COPY_BUILD "Copy the build output to the Skyrim directory." TRUE)
+option(BUILD_SKYRIMAE "Build for Skyrim AE" OFF)
 
 # ---- Cache build vars ----
 
@@ -12,9 +16,39 @@ macro(set_from_environment VARIABLE)
 	endif ()
 endmacro()
 
-set_from_environment(Skyrim64Path)
+macro(find_commonlib_path)
+	if (CommonLibName AND NOT ${CommonLibName} STREQUAL "")
+		# Check extern
+		find_path(CommonLibPath
+		include/REL/Relocation.h
+		PATHS external/${CommonLibName})
+		if (${CommonLibPath} STREQUAL "CommonLibPath-NOTFOUND")
+			#Check path
+			set_from_environment(${CommonLibName}Path)
+			set(CommonLibPath ${${CommonLibName}Path})
+		endif()
+	endif()
+endmacro()
+
 set_from_environment(VCPKG_ROOT)
-set_from_environment(CommonLibSSEPath)
+if(BUILD_SKYRIMAE)
+	add_compile_definitions(SKYRIM_AE)
+	set(CommonLibName "CommonLibSSE")
+	set_from_environment(SkyrimAEPath)
+	set(SkyrimPath ${SkyrimAEPath})
+	set(SkyrimVersion "Skyrim AE")
+	set(VERSION ${VERSION}.${AE_VERSION})
+else()
+	set(CommonLibName "CommonLibSSE")
+	set_from_environment(Skyrim64Path)
+	set(SkyrimPath ${Skyrim64Path})
+	set(SkyrimVersion "Skyrim SSE")
+endif()
+find_commonlib_path()
+message(
+	STATUS
+	"Building ${NAME} ${VERSION} for ${SkyrimVersion} at ${SkyrimPath} with ${CommonLibName} at ${CommonLibPath}."
+)
 
 if (DEFINED VCPKG_ROOT)
 	set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
@@ -27,13 +61,12 @@ else ()
 endif ()
 
 set(Boost_USE_STATIC_RUNTIME OFF CACHE BOOL "")
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "")
 
 # ---- Project ----
 
 project(
-	po3_FEC
-	VERSION 5.0.0
+	${NAME}
+	VERSION ${VERSION}
 	LANGUAGES CXX
 )
 
@@ -64,6 +97,12 @@ add_compile_definitions(
 	SKSE_SUPPORT_XBYAK
 )
 
+if (BUILD_SKYRIMAE)
+	add_compile_definitions(
+		SKYRIM_SUPPORT_AE
+	)
+endif()
+
 if (MSVC)
 	add_compile_definitions(
 		_UNICODE
@@ -80,20 +119,18 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
 
 set(Boost_USE_STATIC_LIBS ON)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "")
 
 # ---- Dependencies ----
 
-if (DEFINED CommonLibSSEPath AND NOT ${CommonLibSSEPath} STREQUAL "" AND IS_DIRECTORY ${CommonLibSSEPath})
-	add_subdirectory(${CommonLibSSEPath} CommonLibSSE)
+if (DEFINED CommonLibPath AND NOT ${CommonLibPath} STREQUAL "" AND IS_DIRECTORY ${CommonLibPath})
+	add_subdirectory(${CommonLibPath} ${CommonLibName})
 else ()
 	message(
 		FATAL_ERROR
-		"Variable CommonLibSSEPath is not set."
+		"Variable ${CommonLibName}Path is not set."
 	)
-endif ()
-
-find_package(spdlog REQUIRED CONFIG)
-find_package(xbyak REQUIRED CONFIG)
+endif()
 
 # ---- Add source files ----
 
@@ -138,15 +175,15 @@ target_include_directories(
 	${PROJECT_NAME}
 	PRIVATE
 		${CMAKE_CURRENT_BINARY_DIR}/include
-		${CMAKE_CURRENT_SOURCE_DIR}/src/C++
+		${CMAKE_CURRENT_SOURCE_DIR}/include
+		${CommonLibPath}/x64/Release
 )
+
 
 target_link_libraries(
 	${PROJECT_NAME}
 	PRIVATE
-		CommonLibSSE::CommonLibSSE
-		spdlog::spdlog
-		xbyak::xbyak
+		${CommonLibName}::${CommonLibName}
 )
 
 if (MSVC)
@@ -208,23 +245,23 @@ endif ()
 target_precompile_headers(
 	${PROJECT_NAME}
 	PRIVATE
-		src/PCH.h
+		include/PCH.h
 )
 
 # ---- Post build ----
 
 if (COPY_BUILD)
-	if (DEFINED Skyrim64Path)
+	if (DEFINED SkyrimPath)
 		add_custom_command(
 			TARGET ${PROJECT_NAME}
 			POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> ${Skyrim64Path}/Data/SKSE/Plugins/
-			COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PDB_FILE:${PROJECT_NAME}> ${Skyrim64Path}/Data/SKSE/Plugins/
+			COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> ${SkyrimPath}/Data/SKSE/Plugins/
+			COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PDB_FILE:${PROJECT_NAME}> ${SkyrimPath}/Data/SKSE/Plugins/
 		)
 	else ()
 		message(
 			WARNING
-			"Variable Skyrim64Path is not defined. Skipping post-build copy command."
+			"Variable ${SkyrimPath} is not defined. Skipping post-build copy command."
 		)
 	endif ()
 endif ()

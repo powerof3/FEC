@@ -1,5 +1,7 @@
 #include "Graphics.h"
 #include "Patches.h"
+#include "Papyrus.h"
+#include "Serialization.h"
 
 //GLOBAL VARS
 RE::SpellItem* deathEffectsAbility;
@@ -138,9 +140,8 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 	switch (a_msg->type) {
 	case SKSE::MessagingInterface::kPostLoad:
 		{
-			auto vec = RequirementsCheck::GetError();
-			if (!vec.empty() && vec.size() == 2) {
-				auto id = WinAPI::MessageBox(nullptr, vec[0].c_str(), vec[1].c_str(), 0x00000004);
+			if (const auto vec = RequirementsCheck::GetError(); !vec.empty() && vec.size() == 2) {
+                const auto id = WinAPI::MessageBox(nullptr, vec[0].c_str(), vec[1].c_str(), 0x00000004);
 				if (id == 2) {
 					std::_Exit(EXIT_FAILURE);
 				}
@@ -161,7 +162,7 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 
 				if (!deathEffectsAbility || !deathEffectsPCAbility) {
 					logger::error("unable to find death effect abilities");
-				    return;
+					return;
 				}
 			}
 
@@ -183,16 +184,18 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 				return ini.GetBoolValue("Fixes", "Cast No-Death-Dispel Spells on Load", false);
 			};
 			if (!get_tweaks_fix()) {
-				MAINTENANCE::Install();
+				FEC::MAINTENANCE::Install();
 			} else {
 				logger::info("powerofthree's Tweaks found, skipping ability maintainer");
 			}
 
-			GRAPHICS::Install();
+            FEC::GRAPHICS::Install();
 
-			PATCH::Install();
+			FEC::PATCH::Install();
 
-			DISTRIBUTE::Install();
+			FEC::DISTRIBUTE::Install();
+
+		    FEC::Serialization::Manager::Register();
 		}
 		break;
 	default:
@@ -200,34 +203,20 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 	}
 }
 
+#ifdef SKYRIM_AE
+extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []() {
+	SKSE::PluginVersionData v;
+	v.PluginVersion(Version::MAJOR);
+	v.PluginName("FEC Helper plugin");
+	v.AuthorName("powerofthree");
+	v.UsesAddressLibrary(true);
+	v.CompatibleVersions({ SKSE::RUNTIME_LATEST });
+
+	return v;
+}();
+#else
 extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a_skse, SKSE::PluginInfo* a_info)
 {
-#ifndef NDEBUG
-	auto sink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
-#else
-	auto path = logger::log_directory();
-	if (!path) {
-		return false;
-	}
-
-	*path /= fmt::format(FMT_STRING("{}.log"), Version::PROJECT);
-	auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true);
-#endif
-
-	auto log = std::make_shared<spdlog::logger>("global log"s, std::move(sink));
-
-#ifndef NDEBUG
-	log->set_level(spdlog::level::trace);
-#else
-	log->set_level(spdlog::level::info);
-	log->flush_on(spdlog::level::info);
-#endif
-
-	spdlog::set_default_logger(std::move(log));
-	spdlog::set_pattern("[%H:%M:%S] %v"s);
-
-	logger::info(FMT_STRING("{} v{}"), Version::PROJECT, Version::NAME);
-
 	a_info->infoVersion = SKSE::PluginInfo::kVersion;
 	a_info->name = "FEC Helper plugin";
 	a_info->version = Version::MAJOR;
@@ -245,6 +234,28 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
 
 	return true;
 }
+#endif
+
+void InitializeLog()
+{
+	auto path = logger::log_directory();
+	if (!path) {
+		stl::report_and_fail("Failed to find standard logging directory"sv);
+	}
+
+	*path /= fmt::format(FMT_STRING("{}.log"), Version::PROJECT);
+	auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true);
+
+	auto log = std::make_shared<spdlog::logger>("global log"s, std::move(sink));
+
+	log->set_level(spdlog::level::info);
+	log->flush_on(spdlog::level::info);
+
+	spdlog::set_default_logger(std::move(log));
+	spdlog::set_pattern("[%l] %v"s);
+
+	logger::info(FMT_STRING("{} v{}"), Version::PROJECT, Version::NAME);
+}
 
 extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse)
 {
@@ -255,6 +266,16 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 
 	const auto messaging = SKSE::GetMessagingInterface();
 	messaging->RegisterListener(OnInit);
+
+	const auto papyrus = SKSE::GetPapyrusInterface();
+	papyrus->Register(FEC::Papyrus::Bind);
+
+	const auto serialization = SKSE::GetSerializationInterface();
+	serialization->SetUniqueID(FEC::Serialization::kFEC);
+	serialization->SetSaveCallback(FEC::Serialization::SaveCallback);
+	serialization->SetLoadCallback(FEC::Serialization::LoadCallback);
+	serialization->SetRevertCallback(FEC::Serialization::RevertCallback);
+	serialization->SetFormDeleteCallback(FEC::Serialization::FormDeleteCallback);
 
 	return true;
 }

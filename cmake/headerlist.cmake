@@ -1,5 +1,8 @@
 set(headers ${headers}
-	src/Graphics.h
-	src/Patches.h
-	src/PCH.h
+	include/Globals.h
+	include/Graphics.h
+	include/PCH.h
+	include/Papyrus.h
+	include/Patches.h
+	include/Serialization.h
 )
