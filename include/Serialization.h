@@ -36,7 +36,6 @@ namespace FEC::Serialization
 			kXRayed,
 			kPoisoned,
 			kFrightened,
-			kBuriedInAsh,
 			kSuffocated,
 			kFrozenShader
 		};

@@ -42,8 +42,6 @@ namespace FEC::Papyrus
 					a_effectMap[DEATH::TYPE::kPoison].emplace_back(mgef, -a_activeEffect->magnitude);
 				} else if (mgef->GetArchetype() == Archetype::kDemoralize) {
 					a_effectMap[DEATH::TYPE::kFear].emplace_back(mgef, -a_activeEffect->magnitude);
-				} else if (mgef->data.associatedSkill == RE::ActorValue::kAlteration && mgef->HasKeyword(keyword::Paralysis)) {
-					a_effectMap[DEATH::TYPE::kAsh].emplace_back(mgef, -a_activeEffect->magnitude);
 				}
 			}
 		}
@@ -95,7 +93,6 @@ namespace FEC::Papyrus
 				if (a_type != 0) {
 					bool poison = !effectMap[DEATH::TYPE::kPoison].empty();
 					bool fear = !effectMap[DEATH::TYPE::kFear].empty();
-					bool ash = !effectMap[DEATH::TYPE::kAsh].empty();
 
 					if (poison) {
 						auto& poisonVec = effectMap[DEATH::TYPE::kPoison];
@@ -104,14 +101,6 @@ namespace FEC::Papyrus
 						effectPair = { DEATH::TYPE::kPoison, poisonEffect.first };
 						if (fear) {
 							effectPair.first = DEATH::TYPE::kPoisonFear;
-						}
-					} else if (ash) {
-						auto& ashVec = effectMap[DEATH::TYPE::kAsh];
-						auto ashEffect = *std::ranges::max_element(ashVec, mag_cmp);
-
-						effectPair = { DEATH::TYPE::kAsh, ashEffect.first };
-						if (fear) {
-							effectPair.first = DEATH::TYPE::kAshFear;
 						}
 					} else if (fear) {
 						auto& fearVec = effectMap[DEATH::TYPE::kFear];

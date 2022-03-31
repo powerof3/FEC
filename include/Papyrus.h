@@ -37,9 +37,7 @@ namespace FEC::Papyrus
 			{
 				kPoison = 0,
 				kFear,
-				kAsh,
-				kPoisonFear,
-				kAshFear
+				kPoisonFear
 			};
 		};
 	}
