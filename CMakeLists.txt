@@ -132,6 +132,8 @@ else ()
 	)
 endif()
 
+find_package(frozen CONFIG REQUIRED)
+
 # ---- Add source files ----
 
 include(cmake/headerlist.cmake)
@@ -184,6 +186,7 @@ target_link_libraries(
 	${PROJECT_NAME}
 	PRIVATE
 		${CommonLibName}::${CommonLibName}
+		frozen::frozen
 )
 
 if (MSVC)

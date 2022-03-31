@@ -277,7 +277,7 @@ namespace FEC::Papyrus
 		});
 	}
 
-    bool HasPermanentDeathEffect(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
+    bool GetPermanentDeathEffect(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
 	{
 	    if (!a_actor) {
 			a_vm->TraceStack("Actor is None", a_stackID);
@@ -293,7 +293,7 @@ namespace FEC::Papyrus
 
 	    return manager->permanentEffectMap.find(a_actor->GetFormID()) == effectType;
     }
-	bool HasTemporaryDeathEffect(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
+	bool GetTemporaryDeathEffect(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
 	{
 		if (!a_actor) {
 			a_vm->TraceStack("Actor is None", a_stackID);
@@ -307,7 +307,8 @@ namespace FEC::Papyrus
 			return manager->temporaryEffectMap.contains(a_actor->GetFormID());
 		}
 
-	    return manager->temporaryEffectMap.find(a_actor->GetFormID()) == effectType;
+        const auto set = manager->temporaryEffectMap.find(a_actor->GetFormID());
+	    return set && set->contains(effectType);
     }
 
     void AssignPermanentDeathEffect(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
@@ -326,7 +327,7 @@ namespace FEC::Papyrus
 			manager->permanentEffectMap.assign(a_actor->GetFormID(), effectType);
 		}
 	}
-    void AssignTemporaryDeathEffect(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
+	void AssignTemporaryDeathEffect(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
 	{
 		if (!a_actor) {
 			a_vm->TraceStack("Actor is None", a_stackID);
@@ -340,6 +341,23 @@ namespace FEC::Papyrus
 			manager->temporaryEffectMap.discard(a_actor->GetFormID());
 		} else {
 			manager->temporaryEffectMap.assign(a_actor->GetFormID(), effectType);
+		}
+	}
+
+	void RemoveTemporaryDeathEffect(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
+	{
+		if (!a_actor) {
+			a_vm->TraceStack("Actor is None", a_stackID);
+			return;
+		}
+
+		const auto manager = Serialization::Manager::GetSingleton();
+		const auto effectType = static_cast<ActorEffect::Temporary>(a_type);
+
+		if (effectType == ActorEffect::Temporary::kNone) {
+			manager->temporaryEffectMap.discard(a_actor->GetFormID());
+		} else {
+			manager->temporaryEffectMap.discard(a_actor->GetFormID(), effectType);
 		}
 	}
 
@@ -396,8 +414,8 @@ namespace FEC::Papyrus
 		BIND(RemoveEffectsNotOfType);
 		BIND(SendFECResetEvent, true);
 
-	    BIND(HasPermanentDeathEffect, true);
-		BIND(HasTemporaryDeathEffect, true);
+	    BIND(GetPermanentDeathEffect, true);
+		BIND(GetTemporaryDeathEffect, true);
 
 	    BIND(AssignPermanentDeathEffect, true);
 		BIND(AssignTemporaryDeathEffect, true);

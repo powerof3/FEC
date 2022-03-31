@@ -151,42 +151,19 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
 			if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-				mod = const_cast<RE::TESFile*>(dataHandler->LookupModByName("FEC.esp"));
+			    mod = const_cast<RE::TESFile*>(dataHandler->LookupModByName("FEC.esp"));
 
 				if (!mod) {
 					logger::error("unable to find FEC.esp");
 				}
 
-				deathEffectsAbility = dataHandler->LookupForm<RE::SpellItem>(0x8EC, "FEC.esp");
-				deathEffectsPCAbility = dataHandler->LookupForm<RE::SpellItem>(0x8E9, "FEC.esp");
+				deathEffectsAbility = dataHandler->LookupForm<RE::SpellItem>(0x8E7, "FEC.esp");
+				deathEffectsPCAbility = dataHandler->LookupForm<RE::SpellItem>(0x8E4, "FEC.esp");
 
 				if (!deathEffectsAbility || !deathEffectsPCAbility) {
 					logger::error("unable to find death effect abilities");
 					return;
 				}
-			}
-
-			constexpr auto get_tweaks_fix = []() {
-				const auto po3TweaksHandle = GetModuleHandleA(ver::po3Tweaks.data());
-				if (po3TweaksHandle == nullptr) {
-					return false;
-				}
-
-				constexpr auto path = L"Data/SKSE/Plugins/po3_Tweaks.ini";
-				CSimpleIniA ini;
-				ini.SetUnicode();
-
-				auto rc = ini.LoadFile(path);
-				if (rc < 0) {
-					return false;
-				}
-
-				return ini.GetBoolValue("Fixes", "Cast No-Death-Dispel Spells on Load", false);
-			};
-			if (!get_tweaks_fix()) {
-				FEC::MAINTENANCE::Install();
-			} else {
-				logger::info("powerofthree's Tweaks found, skipping ability maintainer");
 			}
 
             FEC::GRAPHICS::Install();
@@ -196,6 +173,12 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 			FEC::DISTRIBUTE::Install();
 
 		    FEC::Serialization::Manager::Register();
+		}
+		break;
+	case SKSE::MessagingInterface::kPostLoadGame:
+	case SKSE::MessagingInterface::kNewGame:
+		{
+			FEC::POST_LOAD_PATCH::Install();
 		}
 		break;
 	default:
@@ -259,7 +242,9 @@ void InitializeLog()
 
 extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse)
 {
-	logger::info("loaded");
+	InitializeLog();
+
+    logger::info("loaded");
 
 	SKSE::Init(a_skse);
 	SKSE::AllocTrampoline(75);

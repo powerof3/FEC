@@ -77,7 +77,12 @@ namespace FEC::Serialization
 		return EventResult::kContinue;
 	}
 
-	void SaveCallback(SKSE::SerializationInterface* a_intfc)
+    EventResult Manager::ProcessEvent(const RE::TESResetEvent*, RE::BSTEventSource<RE::TESResetEvent>*)
+	{
+		return EventResult::kContinue;
+	}
+
+    void SaveCallback(SKSE::SerializationInterface* a_intfc)
 	{
 		Manager::GetSingleton()->Save(a_intfc);
 	}

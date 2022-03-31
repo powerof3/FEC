@@ -2,12 +2,12 @@
 
 namespace FEC
 {
-	namespace MAINTENANCE
+	namespace PATCH
 	{
 		void Install();
 	}
 
-	namespace PATCH
+	namespace POST_LOAD_PATCH
 	{
 		void Install();
 	}

@@ -7,84 +7,6 @@ extern RE::TESFile* mod;
 
 namespace FEC
 {
-	namespace MAINTENANCE
-	{
-		namespace Ability
-		{
-			struct detail
-			{
-				static bool has_inactive_base_spell(RE::Character* a_actor)
-				{
-					bool hasSpell = false;
-
-					if (const auto base = a_actor->GetActorBase(); base) {
-						const auto spellList = base->GetSpellList();
-						if (spellList && spellList->spells && spellList->numSpells > 0) {
-							std::span<RE::SpellItem*> span(spellList->spells, spellList->numSpells);
-							for (const auto& spell : span) {
-								if (spell == deathEffectsAbility) {
-									hasSpell = true;
-									break;
-								}
-							}
-						}
-					}
-
-					if (hasSpell) {
-						const auto activeEffects = a_actor->GetActiveEffectList();
-						if (activeEffects) {
-							for (const auto& ae : *activeEffects) {
-								if (ae && ae->spell == deathEffectsAbility) {
-									return false;
-								}
-							}
-						}
-						return true;
-					}
-
-					return false;
-				}
-
-				static void apply_ab(RE::Character* a_this)
-				{
-					if (!a_this->IsPlayerRef() && has_inactive_base_spell(a_this)) {
-						a_this->AddSpell(deathEffectsAbility);
-					}
-				}
-			};
-
-			struct UpdateAVs
-			{
-				static void thunk(RE::Character* a_this)
-				{
-					func(a_this);
-
-					detail::apply_ab(a_this);
-				}
-				static inline REL::Relocation<decltype(&thunk)> func;
-			};
-
-			struct ActorUpdateNoAI
-			{
-				static void thunk(RE::Character* a_this, float a_delta)
-				{
-					func(a_this, a_delta);
-
-					detail::apply_ab(a_this);
-				}
-				static inline REL::Relocation<decltype(&thunk)> func;
-			};
-		}
-
-		void Install()
-		{
-			REL::Relocation<std::uintptr_t> target{ RELOCATION_ID(36357, 37348), OFFSET(0x1D1, 0x1AA) };
-			stl::write_thunk_call<Ability::UpdateAVs>(target.address());
-
-			stl::write_vfunc<RE::Character, 0x0AE, Ability::ActorUpdateNoAI>();
-		}
-	}
-
 	namespace PATCH
 	{
 		void FrozenDeathSubtitles()
@@ -107,7 +29,7 @@ namespace FEC
 						std::span<RE::TESTopicInfo*> span(topic->topicInfos, topic->numTopicInfos);
 						for (const auto& topicInfo : span) {
 							if (topicInfo && topicInfo->data.flags.none(Flags::kNoLIPFile)) {
-								auto newNode = new RE::TESConditionItem;
+                                const auto newNode = new RE::TESConditionItem;
 
 								newNode->next = nullptr;
 								newNode->data.comparisonValue.f = 0.0f;
@@ -136,6 +58,7 @@ namespace FEC
 				const auto giantFaction = RE::TESForm::LookupByID<RE::TESFaction>(faction::giant);
 				const auto hagravenFaction = RE::TESForm::LookupByID<RE::TESFaction>(faction::hagraven);
 				const auto rieklingFaction = RE::TESForm::LookupByID<RE::TESFaction>(faction::riekling);
+				const auto thirstRieklingFaction = RE::TESForm::LookupByID<RE::TESFaction>(faction::thirstRiekling);
 
 				std::uint32_t falmerCount = 0;
 				std::uint32_t giantCount = 0;
@@ -153,7 +76,7 @@ namespace FEC
 						} else if (actorbase->IsInFaction(hagravenFaction)) {
 							hagravenCount++;
 							actorbase->bodyTintColor = color::hagraven;
-						} else if (actorbase->IsInFaction(rieklingFaction)) {
+						} else if (actorbase->IsInFaction(rieklingFaction) || actorbase->IsInFaction(thirstRieklingFaction)) {
 							rieklingCount++;
 							actorbase->bodyTintColor = color::riekling;
 						}
@@ -169,9 +92,11 @@ namespace FEC
 			if (defFireFXS && defFireFXS->particleShaderTexture.textureName == str::embersXDPath) {
 				std::vector<RE::TESEffectShader*> fireFXS;
 				fireFXS.reserve(shader::FEC_fireFXS.size());
+
 				for (auto& formID : shader::FEC_fireFXS) {
 					fireFXS.emplace_back(RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESEffectShader>(formID, "FEC.esp"));
 				}
+
 				for (const auto& shader : fireFXS) {
 					if (shader) {
 						shader->data.flags.reset(RE::EffectShaderData::Flags::kParticleGreyscaleColor);
@@ -187,13 +112,91 @@ namespace FEC
 			}
 		}
 
+		void Cooking()
+		{
+            const auto dataHandler = RE::TESDataHandler::GetSingleton();
+
+            const auto listFoodRaw = dataHandler->LookupForm<RE::BGSListForm>(list::rawFood, "FEC.esp");
+            const auto listFoodCooked = dataHandler->LookupForm<RE::BGSListForm>(list::cookedFood, "FEC.esp");
+
+			if (dataHandler->LookupModByName("Complete Alchemy & Cooking Overhaul.esp")) {
+				for (auto& [rawID, cookedID] : food::caco_map) {
+					listFoodRaw->AddForm(RE::TESForm::LookupByEditorID(rawID));
+					listFoodCooked->AddForm(RE::TESForm::LookupByEditorID(cookedID));
+				}
+				logger::info("Applied CACO patch");
+			}
+			if (dataHandler->LookupModByName("Hunterborn.esp")) {
+				for (auto& [rawID, cookedID] : food::hunterborn_map) {
+					listFoodRaw->AddForm(RE::TESForm::LookupByEditorID(rawID));
+					listFoodCooked->AddForm(RE::TESForm::LookupByEditorID(cookedID));
+				}
+				logger::info("Applied Hunterborn patch");
+			}
+		}
+
 		void Install()
 		{
 			FrozenDeathSubtitles();
 			BodyTintColor();
 			FireShaders();
+			Cooking();
 		}
-	};
+	}
+
+	namespace POST_LOAD_PATCH
+	{
+		void FireShaders()
+		{
+			const auto FEC_FireFXParticleCount = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESGlobal>(global::FEC_FireFXParticleCount, "FEC.esp");
+
+			if (!FEC_FireFXParticleCount) {
+				return;
+			}
+
+			std::vector<RE::TESEffectShader*> fireFXS;
+			fireFXS.reserve(shader::FEC_fireFXS.size());
+
+			for (auto& formID : shader::FEC_fireFXS) {
+				fireFXS.emplace_back(RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESEffectShader>(formID, "FEC.esp"));
+			}
+
+			for (const auto& shader : fireFXS) {
+				if (shader) {
+					shader->data.particleShaderPersistantParticleCount = FEC_FireFXParticleCount->value / 1.2857f;
+					shader->data.particleShaderFullParticleBirthRatio = FEC_FireFXParticleCount->value;
+				}
+			}
+			logger::info("Applied fire shader particle counts");
+		}
+
+		void SunShader()
+		{
+			const auto FEC_SunFXParticleCount = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESGlobal>(global::FEC_SunFXParticleCount, "FEC.esp");
+			const auto sunFXS = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESEffectShader>(shader::FEC_sunFXS, "FEC.esp");
+
+			if (sunFXS && FEC_SunFXParticleCount) {
+				sunFXS->data.particleShaderPersistantParticleCount = FEC_SunFXParticleCount->value / 1.2857f;
+				sunFXS->data.particleShaderFullParticleBirthRatio = FEC_SunFXParticleCount->value;
+			}
+
+			logger::info("Applied sun shader particle counts");
+		}
+
+		void MiscPatches()
+		{
+			if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler->LookupModByName("DizonaBody.esm")) {
+				dataHandler->LookupForm<RE::TESGlobal>(global::FEC_DizonaInstalled, "FEC.esp")->value = 1.0f;
+			}
+		}
+
+		void Install()
+		{
+			FireShaders();
+			SunShader();
+			MiscPatches();
+		}
+	}
 
 	namespace DISTRIBUTE
 	{

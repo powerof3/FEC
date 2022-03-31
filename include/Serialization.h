@@ -20,6 +20,7 @@ namespace FEC::Serialization
 	{
 		enum class Permanent
 		{
+			kReset = static_cast<std::underlying_type_t<Permanent>>(-2),
 			kNone = static_cast<std::underlying_type_t<Permanent>>(-1),
 			kCharred = 0,
 			kSkeletonized,
@@ -29,19 +30,25 @@ namespace FEC::Serialization
 
 		enum class Temporary
 		{
+			kReset = static_cast<std::underlying_type_t<Temporary>>(-2),
 			kNone = static_cast<std::underlying_type_t<Temporary>>(-1),
 			kAged,
 			kXRayed,
 			kPoisoned,
 			kFrightened,
 			kBuriedInAsh,
-			kSuffocated
+			kSuffocated,
+			kFrozenShader
 		};
 	};
 
-	class Manager : public RE::BSTEventSink<RE::TESFormDeleteEvent>
+	class Manager :
+		public RE::BSTEventSink<RE::TESFormDeleteEvent>,
+		public RE::BSTEventSink<RE::TESResetEvent>
 	{
 	public:
+		using TempEffectSet = robin_hood::unordered_flat_set<ActorEffect::Temporary>;
+
 		template <class T>
 		class ActorEffectMap
 		{
@@ -51,23 +58,41 @@ namespace FEC::Serialization
 				Locker locker(_lock);
 				return _map.contains(a_key);
 			}
-			[[nodiscard]] T find(RE::FormID a_key) const
+			[[nodiscard]] std::optional<T> find(RE::FormID a_key) const
 			{
 				Locker locker(_lock);
 
 				const auto it = _map.find(a_key);
-				return it != _map.end() ? it->second : static_cast<T>(-1);
+				return it != _map.end() ? std::make_optional(it->second) : std::nullopt;
 			}
 
-			bool assign(RE::FormID a_key, T a_mapped)
+			bool assign(RE::FormID a_key, ActorEffect::Permanent a_mapped)
 			{
 				Locker locker(_lock);
-				return _map.insert_or_assign(a_key, std::move(a_mapped)).second;
+				return _map.insert_or_assign(a_key, a_mapped).second;
 			}
-			bool discard(RE::FormID a_key, T a_mapped)
+			bool assign(RE::FormID a_key, ActorEffect::Temporary a_mapped)
 			{
 				Locker locker(_lock);
-				return _map.erase(a_key, std::move(a_mapped)).second;
+				return _map[a_key].insert(a_mapped).second;
+			}
+			bool reset(RE::FormID a_key, ActorEffect::Temporary a_mapped)
+			{
+				Locker locker(_lock);
+
+				_map[a_key].clear();
+			    return _map[a_key].insert(a_mapped).second;
+			}
+
+			bool discard(RE::FormID a_key, ActorEffect::Permanent a_mapped)
+			{
+				Locker locker(_lock);
+				return _map.erase(a_key, std::move(a_mapped));
+			}
+			bool discard(RE::FormID a_key, ActorEffect::Temporary a_mapped)
+			{
+				Locker locker(_lock);
+				return _map[a_key].erase(std::move(a_mapped));
 			}
 			bool discard(RE::FormID a_key)
 			{
@@ -84,18 +109,37 @@ namespace FEC::Serialization
 				Locker locker(_lock);
 				_map.clear();
 
-				RE::FormID formID;
-				std::uint32_t effect;
+				if constexpr (std::is_same_v<T, ActorEffect::Permanent>) {
+					RE::FormID formID;
+					std::int32_t effect;
 
-				for (std::size_t i = 0; i < numRegs; i++) {
-					a_intfc->ReadRecordData(formID);
-					if (!a_intfc->ResolveFormID(formID, formID)) {
-						logger::warn("{} : Failed to resolve formID {:X}"sv, i, formID);
-						continue;
+					for (std::size_t i = 0; i < numRegs; i++) {
+						a_intfc->ReadRecordData(formID);
+						if (!a_intfc->ResolveFormID(formID, formID)) {
+							logger::warn("{} : Failed to resolve formID {:X}"sv, i, formID);
+							continue;
+						}
+						a_intfc->ReadRecordData(effect);
+
+						_map.emplace(formID, static_cast<T>(effect));
 					}
-					a_intfc->ReadRecordData(effect);
+				} else {
+					RE::FormID formID;
+					std::size_t numEffects;
+					std::int32_t effect;
 
-					_map.emplace(formID, static_cast<T>(effect));
+					for (std::size_t i = 0; i < numRegs; i++) {
+						a_intfc->ReadRecordData(formID);
+						if (!a_intfc->ResolveFormID(formID, formID)) {
+							logger::warn("{} : Failed to resolve formID {:X}"sv, i, formID);
+							continue;
+						}
+						a_intfc->ReadRecordData(numEffects);
+						for (std::size_t j = 0; j < numEffects; j++) {
+							a_intfc->ReadRecordData(effect);
+							_map[formID].insert(static_cast<ActorEffect::Temporary>(effect));
+						}
+					}
 				}
 			}
 			bool save(SKSE::SerializationInterface* a_intfc, std::uint32_t a_type, std::uint32_t a_version)
@@ -119,19 +163,39 @@ namespace FEC::Serialization
 					return false;
 				}
 
-				for (auto& reg : _map) {
-					if (!a_intfc->WriteRecordData(reg.first)) {
-						logger::error("Failed to save reg ({}: {})!", reg.first, reg.second);
-						return false;
+				if constexpr (std::is_same_v<T, ActorEffect::Permanent>) {
+					for (auto& [key, mapped] : _map) {
+						if (!a_intfc->WriteRecordData(key)) {
+							logger::error("Failed to save key ({}: {})!", key, mapped);
+							return false;
+						}
+						if (!a_intfc->WriteRecordData(stl::to_underlying(mapped))) {
+							logger::error("Failed to save reg ({}: {})!", key, mapped);
+							return false;
+						}
 					}
-					if (!a_intfc->WriteRecordData(reg.second)) {
-						logger::error("Failed to save reg ({}: {})!", reg.first, reg.second);
-						return false;
+				} else {
+					for (auto& [key, set] : _map) {
+						if (!a_intfc->WriteRecordData(key)) {
+							logger::error("Failed to save key ({})!", key);
+							return false;
+						}
+						if (!a_intfc->WriteRecordData(set.size())) {
+							logger::error("Failed to save reg size ({})!", key);
+							return false;
+						}
+						for (auto& mapped : set) {
+							if (!a_intfc->WriteRecordData(stl::to_underlying(mapped))) {
+								logger::error("Failed to save reg ({} : {})!", key, mapped);
+								return false;
+							}
+						}
 					}
 				}
 
 				return true;
 			}
+
 			void clear()
 			{
 				Locker locker(_lock);
@@ -143,7 +207,7 @@ namespace FEC::Serialization
 			robin_hood::unordered_flat_map<RE::FormID, T> _map{};
 		};
 
-	    static Manager* GetSingleton()
+		static Manager* GetSingleton()
 		{
 			static Manager singleton;
 			return &singleton;
@@ -152,7 +216,8 @@ namespace FEC::Serialization
 		static void Register()
 		{
 			if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
-				scripts->AddEventSink(GetSingleton());
+				scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
+				scripts->AddEventSink<RE::TESResetEvent>(GetSingleton());
 				logger::info("Registered form deletion event handler"sv);
 			}
 		}
@@ -165,9 +230,10 @@ namespace FEC::Serialization
 		void FormDelete(RE::VMHandle a_handle);
 
 		EventResult ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*) override;
+		EventResult ProcessEvent(const RE::TESResetEvent* a_event, RE::BSTEventSource<RE::TESResetEvent>*) override;
 
 		ActorEffectMap<ActorEffect::Permanent> permanentEffectMap;
-		ActorEffectMap<ActorEffect::Temporary> temporaryEffectMap;
+		ActorEffectMap<TempEffectSet> temporaryEffectMap;
 
 	private:
 		Manager() = default;

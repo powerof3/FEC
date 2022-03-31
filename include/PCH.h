@@ -1,13 +1,17 @@
 #pragma once
 
+#define WIN32_LEAN_AND_MEAN
+
 #define NOMB
 #define NOMINMAX
+#define NOSERVICE
 
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
 
 #pragma warning(push)
 #include <SimpleIni.h>
+#include <frozen/map.h>
 #include <robin_hood.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <xbyak/xbyak.h>

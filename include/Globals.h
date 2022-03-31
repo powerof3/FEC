@@ -37,6 +37,42 @@ namespace FEC
 		inline constexpr RE::FormID giant{ 0x0004359A };
 		inline constexpr RE::FormID hagraven{ 0x0004359E };
 		inline constexpr RE::FormID riekling{ 0x0401D9C9 };
+		inline constexpr RE::FormID thirstRiekling{ 0x040208D9 };
+	}
+
+	namespace food
+	{
+		inline constexpr frozen::map<std::string_view, std::string_view, 13> hunterborn_map{
+			{ "_DS_Food_Raw_Bear"sv, "HB_FireFood_Food_BearSteak"sv },
+			{ "_DS_Food_Raw_Chaurus"sv, "_DS_Food_ChaurusChops"sv },
+			{ "_DS_Food_Raw_Elk"sv, "_DS_Food_SmokedElkRoast"sv },
+			{ "_DS_Food_Raw_Fox"sv, "_DS_Food_SearedFox"sv },
+			{ "_DS_Food_Raw_Goat"sv, "_DS_Food_GoatHaunch"sv },
+			{ "_DS_Food_Raw_Hare"sv, "_DS_Food_SearedRabbit"sv },
+			{ "_DS_Food_Raw_Mammoth"sv, "HB_FireFood_Food_MammothSteak"sv },
+			{ "_DS_Food_Raw_Mudcrab"sv, "_DS_Food_BoiledMudcrab"sv },
+			{ "_DS_Food_Raw_Sabrecat"sv, "HB_FireFood_Food_SearedSabreCat"sv },
+			{ "_DS_Food_Raw_Skeever"sv, "_DS_Food_SkeweredSkeever"sv },
+			{ "_DS_Food_Raw_Spider"sv, "_DS_Food_SpiderFry"sv },
+			{ "_DS_Food_Raw_Troll"sv, "_DS_Food_CharredTroll"sv },
+			{ "_DS_Food_Raw_Wolf"sv, "_DS_Food_WolfHaunch"sv }
+		};
+
+		inline constexpr frozen::map<std::string_view, std::string_view, 13> caco_map{
+			{ "CACO_FoodMeatAshHopperMeat"sv, "CACO_FoodMeatAshHopperMeatCooked"sv },
+			{ "CACO_FoodMeatBear"sv, "CACO_FoodMeatBearCooked"sv },
+			{ "CACO_FoodMeatChaurusMeat"sv, "CACO_FoodMeatChaurusMeatCooked"sv },
+			{ "CACO_FoodMeatFox"sv, "CACO_FoodMeatFoxCooked"sv },
+			{ "CACO_FoodMeatMammoth"sv, "CACO_FoodMeatMammothCooked"sv },
+			{ "CACO_FoodMeatSabre"sv, "CACO_FoodMeatSabreCooked"sv },
+			{ "CACO_FoodMeatTroll"sv, "CACO_FoodMeatTrollCooked"sv },
+			{ "FoodDogMeat"sv, "CACO_FoodMeatDogCooked"sv },
+			{ "CACO_FoodMeatSkeeverRaw"sv, "FoodCharredSkeeverMeat"sv },
+			{ "DLC2FoodMeatAshHopperLeg"sv, "CACO_FoodMeatAshHopperLegCooked_SL00"sv },
+			{ "CACO_FoodSeaSlaughterfishRaw"sv, "FoodSlaughterFishCooked"sv },
+			{ "CACO_FoodMeatHumanoidFlesh"sv, "CACO_FoodMeatHumanoidFleshCooked"sv },
+			{ "CACO_FoodMeatSheepRaw"sv, "CACO_FoodMeatSheepCooked"sv }
+		};
 	}
 
 	namespace geometry
@@ -45,6 +81,14 @@ namespace FEC
 		inline constexpr auto headXRay{ "fec_xray_head"sv };
 		inline constexpr auto body{ "fec_body"sv };
 		inline constexpr auto bodyCharred{ "fec_charred_body"sv };
+	}
+
+	namespace global
+	{
+		inline constexpr RE::FormID FEC_FireFXParticleCount{ 0x869 };
+		inline constexpr RE::FormID FEC_SunFXParticleCount{ 0x87C };
+
+		inline constexpr RE::FormID FEC_DizonaInstalled{ 0x8AB };
 	}
 
 	namespace keyword
@@ -56,12 +100,20 @@ namespace FEC
 		inline constexpr auto Paralysis{ "MagicParalysis"sv };
 	}
 
+	namespace list
+	{
+		inline constexpr RE::FormID rawFood{ 0x870 };
+		inline constexpr RE::FormID cookedFood{ 0x871 };
+	}
+
 	namespace shader
 	{
 		inline constexpr RE::FormID fireFXShader{ 0x0001B212 };
 		inline constexpr RE::FormID DLC1_SunCloakSpellHandFX{ 0x0200A3BD };
 
-		inline constexpr std::array<RE::FormID, 3> FEC_fireFXS = { 0x806, 0x826, 0x82F };
+		inline constexpr std::array<RE::FormID, 3> FEC_fireFXS = { 0x8E2, 0x877, 0x896 };
+		inline constexpr RE::FormID FEC_sunFXS{ 0x807 };
+
 		inline constexpr std::array<RE::FormID, 3> sunHitFXS = { 0x02019C9D, 0x0200A3BB, 0x0200A3BC };
 		inline constexpr std::array<RE::FormID, 2> sunHitArt = { 0x0200A3B7, 0x0200A3B8 };
 	}

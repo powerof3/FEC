@@ -1,4 +1,5 @@
 #include "Graphics.h"
+#include "Serialization.h"
 
 extern RE::TESFile* mod;
 extern RE::SpellItem* deathEffectsAbility;
@@ -31,7 +32,7 @@ namespace FEC::GRAPHICS
 		}
 	}
 
-    namespace SET
+	namespace SET
 	{
 		void SkinAlpha(RE::NiAVObject* a_root, float a_alpha, bool a_setData)
 		{
@@ -249,7 +250,7 @@ namespace FEC::GRAPHICS
 			}
 		};
 
-	    void stop_all_skin_shaders(RE::TESObjectREFR* a_ref)
+		void stop_all_skin_shaders(RE::TESObjectREFR* a_ref)
 		{
 			using Flags = RE::EffectShaderData::Flags;
 
@@ -519,26 +520,19 @@ namespace FEC::GRAPHICS
 
 	namespace ARMOR
 	{
+		using namespace Serialization;
+
+		using PermEffect = ActorEffect::Permanent;
+		using TempEffect = ActorEffect::Temporary;
+
 		struct detail
 		{
-			static std::int32_t get_FEC_faction(RE::Actor* a_actor)
+			static bool has_FEC_addon(RE::BipedAnim* a_biped)
 			{
-				std::int32_t x = -1;
-
-				a_actor->VisitFactions([&x](RE::TESFaction* a_faction, std::int8_t a_rank) {
-					if (a_faction && a_rank > -1) {
-						const std::string name(a_faction->GetName());
-						for (std::uint32_t i = 0; i < factions::effects.size(); i++) {
-							if (name == factions::effects[i]) {
-								x = i;
-								return true;
-							}
-						}
-					}
-					return false;
+				return std::ranges::any_of(slot::fxBiped, [&](const auto& bipedSlot) {
+					const auto addon = a_biped->objects[bipedSlot].addon;
+					return addon && mod->IsFormInMod(addon->formID);
 				});
-
-				return x;
 			}
 
 			static void attach(RE::BipedAnim* a_biped, RE::NiAVObject* a_object)
@@ -556,28 +550,30 @@ namespace FEC::GRAPHICS
 						return;
 					}
 
-					const auto facType = get_FEC_faction(actor);
-					if (facType == -1) {
-						return;
-					}
+					if (has_FEC_addon(a_biped)) {
+						const auto permType = Manager::GetSingleton()->permanentEffectMap.find(actor->GetFormID());
+						const auto tempType = Manager::GetSingleton()->temporaryEffectMap.find(actor->GetFormID());
 
-					if (std::ranges::any_of(slot::fxBiped, [&](const auto& bipedSlot) {
-							const auto addon = a_biped->objects[bipedSlot].addon;
-							return addon && mod->IsFormInMod(addon->formID);
-						})) {
-						if (const auto name = a_object->name; !name.empty()) {
-							if (std::ranges::find(underwear::underwears, name.c_str()) != underwear::underwears.end() && facType <= 1) {
-								SET::Toggle(root, a_object, true);
-							} else if (a_object->HasShaderType(Feature::kFaceGenRGBTint)) {
-								const auto alpha = facType == 3 ? 0.5f : 0.0f;
-								SET::SkinAlpha(root, a_object, alpha);
+						if (permType && *permType != PermEffect::kNone) {
+							if (const auto name = a_object->name; !name.empty()) {
+								if (std::ranges::find(underwear::underwears, name.c_str()) != underwear::underwears.end() && (*permType == PermEffect::kCharred || *permType == PermEffect::kSkeletonized)) {
+									SET::Toggle(root, a_object, true);
+								} else if (a_object->HasShaderType(Feature::kFaceGenRGBTint)) {
+									SET::SkinAlpha(root, a_object, 0.0f);
+								}
+							}
+						} else if (tempType && !tempType->empty()) {
+							if (const auto name = a_object->name; !name.empty()) {
+								if (a_object->HasShaderType(Feature::kFaceGenRGBTint) && tempType->contains(TempEffect::kXRayed)) {
+									SET::SkinAlpha(root, a_object, 0.5f);
+								}
 							}
 						}
 					}
 				}
 			}
 
-			static std::optional<std::uint32_t> get_data(RE::NiAVObject* a_object)
+			static std::optional<std::uint32_t> get_data(const RE::NiAVObject* a_object)
 			{
 				if (!a_object->extra || a_object->extraDataSize == 0) {
 					return std::nullopt;
@@ -643,8 +639,8 @@ namespace FEC::GRAPHICS
 					func(a_npc, a_actor, a_node);
 
 					if (a_actor && !a_actor->IsPlayerRef() && a_actor->HasKeywordString("ActorTypeNPC"sv)) {
-						const auto facType = detail::get_FEC_faction(a_actor);
-						if (facType == -1) {
+						const auto permType = Manager::GetSingleton()->permanentEffectMap.find(a_actor->GetFormID());
+						if (permType && *permType != PermEffect::kNone) {
 							return;
 						}
 
@@ -653,9 +649,9 @@ namespace FEC::GRAPHICS
 							const auto addon = biped->objects[Biped::kModMouth].addon;
 
 							if (addon && mod->IsFormInMod(addon->formID)) {
-								if (facType == 0 || facType == 1) {
+								if (*permType == PermEffect::kCharred || *permType == PermEffect::kSkeletonized) {
 									SET::Toggle(root, RE::FixedStrings::GetSingleton()->bsFaceGenNiNodeSkinned, true);
-								} else if (facType == 2) {
+								} else if (*permType == PermEffect::kDrained) {
 									for (auto& headpart : slot::headparts) {
 										SET::HeadPartAlpha(a_actor, root, headpart, 0.0f);
 									}
