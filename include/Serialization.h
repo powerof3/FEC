@@ -10,10 +10,11 @@ namespace FEC::Serialization
 	{
 		kSerializationVersion = 1,
 
-		kFEC = 'FECM',
+		kFEC = 'FECK',
 
-		kFECReset = 'FECR',
-		kFECEffect = 'FECE'
+		kFECReset = 'REST',
+		kFECPerm = 'PERM',
+		kFECTemp = 'TEMP'
 	};
 
 	struct ActorEffect
@@ -109,7 +110,7 @@ namespace FEC::Serialization
 				_map.clear();
 
 				if constexpr (std::is_same_v<T, ActorEffect::Permanent>) {
-					RE::FormID formID;
+				    RE::FormID formID;
 					std::int32_t effect;
 
 					for (std::size_t i = 0; i < numRegs; i++) {
@@ -123,7 +124,7 @@ namespace FEC::Serialization
 						_map.emplace(formID, static_cast<T>(effect));
 					}
 				} else {
-					RE::FormID formID;
+				    RE::FormID formID;
 					std::size_t numEffects;
 					std::int32_t effect;
 
@@ -158,34 +159,34 @@ namespace FEC::Serialization
 
 				const std::size_t numRegs = _map.size();
 				if (!a_intfc->WriteRecordData(numRegs)) {
-					logger::error("Failed to save number of regs ({})!", numRegs);
+					logger::error("Failed to save map size ({})!", numRegs);
 					return false;
 				}
 
 				if constexpr (std::is_same_v<T, ActorEffect::Permanent>) {
-					for (auto& [key, mapped] : _map) {
+				    for (auto& [key, mapped] : _map) {
 						if (!a_intfc->WriteRecordData(key)) {
-							logger::error("Failed to save key ({}: {})!", key, mapped);
+							logger::error("	Failed to save key ({}: {})!", key, mapped);
 							return false;
 						}
 						if (!a_intfc->WriteRecordData(stl::to_underlying(mapped))) {
-							logger::error("Failed to save reg ({}: {})!", key, mapped);
+							logger::error("	Failed to save value ({}: {})!", key, mapped);
 							return false;
 						}
 					}
 				} else {
-					for (auto& [key, set] : _map) {
+				    for (auto& [key, set] : _map) {
 						if (!a_intfc->WriteRecordData(key)) {
-							logger::error("Failed to save key ({})!", key);
+							logger::error("	Failed to save key ({})!", key);
 							return false;
 						}
 						if (!a_intfc->WriteRecordData(set.size())) {
-							logger::error("Failed to save reg size ({})!", key);
+							logger::error("	Failed to save value size ({})!", key);
 							return false;
 						}
 						for (auto& mapped : set) {
 							if (!a_intfc->WriteRecordData(stl::to_underlying(mapped))) {
-								logger::error("Failed to save reg ({} : {})!", key, mapped);
+								logger::error("	Failed to save reg ({} : {})!", key, mapped);
 								return false;
 							}
 						}

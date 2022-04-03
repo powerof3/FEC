@@ -20,8 +20,8 @@ namespace FEC::Serialization
 	{
 		FECreset.Save(a_intfc, kFECReset, kSerializationVersion);
 
-		permanentEffectMap.save(a_intfc, kFECEffect, kSerializationVersion);
-		temporaryEffectMap.save(a_intfc, kFECEffect, kSerializationVersion);
+		permanentEffectMap.save(a_intfc, kFECPerm, kSerializationVersion);
+		temporaryEffectMap.save(a_intfc, kFECTemp, kSerializationVersion);
 
 		logger::info("Finished saving data"sv);
 	}
@@ -39,11 +39,11 @@ namespace FEC::Serialization
 			case kFECReset:
 				FECreset.Load(a_intfc);
 				break;
-			case kFECEffect:
-				{
-					permanentEffectMap.load(a_intfc);
-					temporaryEffectMap.load(a_intfc);
-				}
+			case kFECPerm:
+				permanentEffectMap.load(a_intfc);
+				break;
+			case kFECTemp:
+				temporaryEffectMap.load(a_intfc);
 				break;
 			default:
 				break;
@@ -77,12 +77,12 @@ namespace FEC::Serialization
 		return EventResult::kContinue;
 	}
 
-    EventResult Manager::ProcessEvent(const RE::TESResetEvent*, RE::BSTEventSource<RE::TESResetEvent>*)
+	EventResult Manager::ProcessEvent(const RE::TESResetEvent*, RE::BSTEventSource<RE::TESResetEvent>*)
 	{
 		return EventResult::kContinue;
 	}
 
-    void SaveCallback(SKSE::SerializationInterface* a_intfc)
+	void SaveCallback(SKSE::SerializationInterface* a_intfc)
 	{
 		Manager::GetSingleton()->Save(a_intfc);
 	}
