@@ -640,7 +640,7 @@ namespace FEC::GRAPHICS
 
 					if (a_actor && !a_actor->IsPlayerRef() && a_actor->HasKeywordString("ActorTypeNPC"sv)) {
 						const auto permType = Manager::GetSingleton()->permanentEffectMap.find(a_actor->GetFormID());
-						if (permType && *permType != PermEffect::kNone) {
+						if (!permType || *permType == PermEffect::kNone) {
 							return;
 						}
 
