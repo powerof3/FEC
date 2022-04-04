@@ -10,43 +10,46 @@ namespace FEC::Papyrus
 	using deathEffectPair = std::pair<std::uint32_t, RE::EffectSetting*>;                               // [type, mgef]
 	using deathEffectMap = std::map<std::uint32_t, std::vector<std::pair<RE::EffectSetting*, float>>>;  // [type, [mgef, mag]]
 
-	bool process_active_effect(RE::ActiveEffect* a_activeEffect, DEATH::MODE a_mode, deathEffectPair& a_effectPair, deathEffectMap& a_effectMap)
+	struct detail
 	{
-		using FLAG = RE::EffectSetting::EffectSettingData::Flag;
-		using AE_FLAG = RE::ActiveEffect::Flag;
-		using CAST_TYPE = RE::MagicSystem::CastingType;
-		using Archetype = RE::EffectArchetypes::ArchetypeID;
+		static bool process_active_effect(RE::ActiveEffect* a_activeEffect, DEATH::MODE a_mode, deathEffectPair& a_effectPair, deathEffectMap& a_effectMap)
+		{
+			using FLAG = RE::EffectSetting::EffectSettingData::Flag;
+			using AE_FLAG = RE::ActiveEffect::Flag;
+			using CAST_TYPE = RE::MagicSystem::CastingType;
+			using Archetype = RE::EffectArchetypes::ArchetypeID;
 
-		const auto mgef = a_activeEffect ? a_activeEffect->GetBaseObject() : nullptr;
-		if (mgef && mgef->data.flags.all(FLAG::kHostile) && mgef->data.flags.all(FLAG::kDetrimental)) {
-			if (a_mode == DEATH::MODE::kPermanent) {
-				if (mgef->HasKeyword(keyword::Sun)) {
-					a_effectPair = { DEATH::TYPE::PERMANENT::kSun, mgef };  //sun override
-					return true;
-				}
-				/*if (mgef->data.resistVariable == RE::ActorValue::kPoisonResist && mgef->data.castingType == CAST_TYPE::kConcentration) {
+			const auto mgef = a_activeEffect ? a_activeEffect->GetBaseObject() : nullptr;
+			if (mgef && mgef->data.flags.all(FLAG::kHostile) && mgef->data.flags.all(FLAG::kDetrimental)) {
+				if (a_mode == DEATH::MODE::kPermanent) {
+					if (mgef->HasKeyword(keyword::Sun)) {
+						a_effectPair = { DEATH::TYPE::PERMANENT::kSun, mgef };  //sun override
+						return true;
+					}
+					/*if (mgef->data.resistVariable == RE::ActorValue::kPoisonResist && mgef->data.castingType == CAST_TYPE::kConcentration) {
                     a_effectPair = { DEATH::TYPE::PERMANENT::kAcid, mgef }; //acid override
                     return true;
                 }*/
-				if (mgef->HasKeyword(keyword::Fire)) {
-					a_effectMap[DEATH::TYPE::kFire].emplace_back(mgef, -a_activeEffect->magnitude);  //flipping the magnitude back to +ve
-				} else if (mgef->HasKeyword(keyword::Frost)) {
-					a_effectMap[DEATH::TYPE::kFrost].emplace_back(mgef, -a_activeEffect->magnitude);
-				} else if (mgef->HasKeyword(keyword::Shock)) {
-					a_effectMap[DEATH::TYPE::kShock].emplace_back(mgef, -a_activeEffect->magnitude);
-				} else if (mgef->GetArchetype() == Archetype::kAbsorb) {
-					a_effectMap[DEATH::TYPE::kDrain].emplace_back(mgef, -a_activeEffect->magnitude);
-				}
-			} else {
-				if (mgef->data.resistVariable == RE::ActorValue::kPoisonResist && mgef->data.castingType != CAST_TYPE::kConcentration) {
-					a_effectMap[DEATH::TYPE::kPoison].emplace_back(mgef, -a_activeEffect->magnitude);
-				} else if (mgef->GetArchetype() == Archetype::kDemoralize) {
-					a_effectMap[DEATH::TYPE::kFear].emplace_back(mgef, -a_activeEffect->magnitude);
+					if (mgef->HasKeyword(keyword::Fire)) {
+						a_effectMap[DEATH::TYPE::kFire].emplace_back(mgef, -a_activeEffect->magnitude);  //flipping the magnitude back to +ve
+					} else if (mgef->HasKeyword(keyword::Frost)) {
+						a_effectMap[DEATH::TYPE::kFrost].emplace_back(mgef, -a_activeEffect->magnitude);
+					} else if (mgef->HasKeyword(keyword::Shock)) {
+						a_effectMap[DEATH::TYPE::kShock].emplace_back(mgef, -a_activeEffect->magnitude);
+					} else if (mgef->GetArchetype() == Archetype::kAbsorb) {
+						a_effectMap[DEATH::TYPE::kDrain].emplace_back(mgef, -a_activeEffect->magnitude);
+					}
+				} else {
+					if (mgef->data.resistVariable == RE::ActorValue::kPoisonResist && mgef->data.castingType != CAST_TYPE::kConcentration) {
+						a_effectMap[DEATH::TYPE::kPoison].emplace_back(mgef, -a_activeEffect->magnitude);
+					} else if (mgef->GetArchetype() == Archetype::kDemoralize) {
+						a_effectMap[DEATH::TYPE::kFear].emplace_back(mgef, -a_activeEffect->magnitude);
+					}
 				}
 			}
+			return false;
 		}
-		return false;
-	}
+	};
 
 	std::vector<std::int32_t> GetCauseOfDeath(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::uint32_t a_type)
 	{
@@ -75,7 +78,7 @@ namespace FEC::Papyrus
 		const auto deathMode = static_cast<DEATH::MODE>(a_type);
 
 		for (const auto& activeEffect : *activeEffects) {
-			if (process_active_effect(activeEffect, deathMode, effectPair, effectMap)) {
+			if (detail::process_active_effect(activeEffect, deathMode, effectPair, effectMap)) {
 				break;
 			}
 		}
@@ -469,6 +472,8 @@ namespace FEC::Papyrus
 
 		BIND(AssignPermanentDeathEffect, true);
 		BIND(AssignTemporaryDeathEffect, true);
+
+		BIND(RemoveTemporaryDeathEffect, true);
 
 		BIND(RegisterForFECReset, true);
 		BIND(RegisterForFECReset_Form, true);

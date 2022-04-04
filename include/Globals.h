@@ -9,6 +9,10 @@ namespace FEC
 	using States = RE::BSGeometry::States;
 	using Texture = RE::BSTextureSet::Texture;
 
+	using VM = RE::BSScript::Internal::VirtualMachine;
+	using StackID = RE::VMStackID;
+	using Severity = RE::BSScript::ErrorLogger::Severity;
+
 	namespace color
 	{
 		inline constexpr RE::Color falmer{ 0x8F7F75 };
