@@ -7,7 +7,7 @@ namespace FEC::Papyrus
 {
 	using ActorEffect = Serialization::ActorEffect;
 
-    using deathEffectPair = std::pair<std::uint32_t, RE::EffectSetting*>;                               // [type, mgef]
+	using deathEffectPair = std::pair<std::uint32_t, RE::EffectSetting*>;                               // [type, mgef]
 	using deathEffectMap = std::map<std::uint32_t, std::vector<std::pair<RE::EffectSetting*, float>>>;  // [type, [mgef, mag]]
 
 	bool process_active_effect(RE::ActiveEffect* a_activeEffect, DEATH::MODE a_mode, deathEffectPair& a_effectPair, deathEffectMap& a_effectMap)
@@ -24,11 +24,11 @@ namespace FEC::Papyrus
 					a_effectPair = { DEATH::TYPE::PERMANENT::kSun, mgef };  //sun override
 					return true;
 				}
-                if (mgef->data.resistVariable == RE::ActorValue::kPoisonResist && mgef->data.castingType == CAST_TYPE::kConcentration) {
+				/*if (mgef->data.resistVariable == RE::ActorValue::kPoisonResist && mgef->data.castingType == CAST_TYPE::kConcentration) {
                     a_effectPair = { DEATH::TYPE::PERMANENT::kAcid, mgef }; //acid override
                     return true;
-                }
-                if (mgef->HasKeyword(keyword::Fire)) {
+                }*/
+				if (mgef->HasKeyword(keyword::Fire)) {
 					a_effectMap[DEATH::TYPE::kFire].emplace_back(mgef, -a_activeEffect->magnitude);  //flipping the magnitude back to +ve
 				} else if (mgef->HasKeyword(keyword::Frost)) {
 					a_effectMap[DEATH::TYPE::kFrost].emplace_back(mgef, -a_activeEffect->magnitude);
@@ -48,7 +48,7 @@ namespace FEC::Papyrus
 		return false;
 	}
 
-	std::vector<std::int32_t> GetCauseOfDeath(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*,RE::Actor* a_actor, std::uint32_t a_type)
+	std::vector<std::int32_t> GetCauseOfDeath(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::uint32_t a_type)
 	{
 		using FLAG = RE::EffectSetting::EffectSettingData::Flag;
 		using AE_FLAG = RE::ActiveEffect::Flag;
@@ -72,9 +72,9 @@ namespace FEC::Papyrus
 		deathEffectPair effectPair{ -1, nullptr };
 		deathEffectMap effectMap{};
 
-        const auto deathMode = static_cast<DEATH::MODE>(a_type);
+		const auto deathMode = static_cast<DEATH::MODE>(a_type);
 
-	    for (const auto& activeEffect : *activeEffects) {
+		for (const auto& activeEffect : *activeEffects) {
 			if (process_active_effect(activeEffect, deathMode, effectPair, effectMap)) {
 				break;
 			}
@@ -184,7 +184,8 @@ namespace FEC::Papyrus
 
 		return vec;
 	}
-	void RemoveEffectsNotOfType(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*,RE::Actor* a_actor,std::int32_t a_type)
+
+	void RemoveEffectsNotOfType(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
 	{
 		using namespace GRAPHICS;
 
@@ -266,22 +267,23 @@ namespace FEC::Papyrus
 		});
 	}
 
-    bool GetPermanentDeathEffect(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
+	bool GetPermanentDeathEffect(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
 	{
-	    if (!a_actor) {
+		if (!a_actor) {
 			a_vm->TraceStack("Actor is None", a_stackID);
 			return false;
 		}
 
-        const auto manager = Serialization::Manager::GetSingleton();
-		const auto effectType = static_cast<ActorEffect::Permanent>(a_type); 
+		const auto manager = Serialization::Manager::GetSingleton();
+		const auto effectType = static_cast<ActorEffect::Permanent>(a_type);
 
-	    if (effectType == ActorEffect::Permanent::kNone) {
+		if (effectType == ActorEffect::Permanent::kNone) {
 			return manager->permanentEffectMap.contains(a_actor->GetFormID());
-        }
+		}
 
-	    return manager->permanentEffectMap.find(a_actor->GetFormID()) == effectType;
-    }
+		return manager->permanentEffectMap.find(a_actor->GetFormID()) == effectType;
+	}
+
 	bool GetTemporaryDeathEffect(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
 	{
 		if (!a_actor) {
@@ -296,11 +298,11 @@ namespace FEC::Papyrus
 			return manager->temporaryEffectMap.contains(a_actor->GetFormID());
 		}
 
-        const auto set = manager->temporaryEffectMap.find(a_actor->GetFormID());
-	    return set && set->contains(effectType);
-    }
+		const auto set = manager->temporaryEffectMap.find(a_actor->GetFormID());
+		return set && set->contains(effectType);
+	}
 
-    void AssignPermanentDeathEffect(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
+	void AssignPermanentDeathEffect(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
 	{
 		if (!a_actor) {
 			a_vm->TraceStack("Actor is None", a_stackID);
@@ -316,6 +318,7 @@ namespace FEC::Papyrus
 			manager->permanentEffectMap.assign(a_actor->GetFormID(), effectType);
 		}
 	}
+
 	void AssignTemporaryDeathEffect(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
 	{
 		if (!a_actor) {
@@ -350,7 +353,7 @@ namespace FEC::Papyrus
 		}
 	}
 
-    void RegisterForFECReset(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*,const RE::ActiveEffect* a_activeEffect, std::uint32_t a_type)
+	void RegisterForFECReset(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::ActiveEffect* a_activeEffect, std::uint32_t a_type)
 	{
 		if (!a_activeEffect) {
 			a_vm->TraceStack("Active Effect is None", a_stackID);
@@ -360,7 +363,19 @@ namespace FEC::Papyrus
 		auto& regs = Serialization::Manager::GetSingleton()->FECreset;
 		regs.Register(a_activeEffect, a_type);
 	}
-	void SendFECResetEvent(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*,const RE::Actor* a_actor,std::uint32_t a_type, bool a_reset)
+
+	void RegisterForFECReset_Form(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::TESForm* a_form, std::uint32_t a_type)
+	{
+		if (!a_form) {
+			a_vm->TraceStack("Active Effect is None", a_stackID);
+			return;
+		}
+
+		auto& regs = Serialization::Manager::GetSingleton()->FECreset;
+		regs.Register(a_form, a_type);
+	}
+
+	void SendFECResetEvent(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::Actor* a_actor, std::uint32_t a_type, bool a_reset)
 	{
 		if (!a_actor) {
 			a_vm->TraceStack("Actor is None", a_stackID);
@@ -369,6 +384,7 @@ namespace FEC::Papyrus
 
 		Serialization::Manager::GetSingleton()->FECreset.QueueEvent(a_type, a_actor, a_type, a_reset);
 	}
+
 	void UnregisterForFECReset(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::ActiveEffect* a_activeEffect, std::uint32_t a_type)
 	{
 		if (!a_activeEffect) {
@@ -379,6 +395,18 @@ namespace FEC::Papyrus
 		auto& regs = Serialization::Manager::GetSingleton()->FECreset;
 		regs.Unregister(a_activeEffect, a_type);
 	}
+
+	void UnregisterForFECReset_Form(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::TESForm* a_form, std::uint32_t a_type)
+	{
+		if (!a_form) {
+			a_vm->TraceStack("Form is None", a_stackID);
+			return;
+		}
+
+		auto& regs = Serialization::Manager::GetSingleton()->FECreset;
+		regs.Unregister(a_form, a_type);
+	}
+
 	void UnregisterForAllFECResets(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::ActiveEffect* a_activeEffect)
 	{
 		if (!a_activeEffect) {
@@ -390,7 +418,40 @@ namespace FEC::Papyrus
 		regs.UnregisterAll(a_activeEffect);
 	}
 
-    bool Bind(VM* a_vm)
+	void UnregisterForAllFECResets_Form(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::TESForm* a_form)
+	{
+		if (!a_form) {
+			a_vm->TraceStack("Form is None", a_stackID);
+			return;
+		}
+
+		auto& regs = Serialization::Manager::GetSingleton()->FECreset;
+		regs.UnregisterAll(a_form);
+	}
+
+	void VaporizeUnderwear(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor)
+	{
+		if (!a_actor) {
+			a_vm->TraceStack("Actor is None", a_stackID);
+			return;
+		}
+
+		const auto root = a_actor->Get3D(false);
+		if (!root) {
+			a_vm->TraceForm(a_actor, "has no 3D", a_stackID, Severity::kInfo);
+			return;
+		}
+
+		SKSE::GetTaskInterface()->AddTask([a_actor, root]() {
+			for (auto& underwear : underwear::underwears) {
+				if (const auto object = root->GetObjectByName(underwear)) {
+					GRAPHICS::SET::Toggle(root, object, true);
+				}
+			}
+		});
+	}
+
+	bool Bind(VM* a_vm)
 	{
 		if (!a_vm) {
 			logger::critical("couldn't get VM State"sv);
@@ -403,15 +464,22 @@ namespace FEC::Papyrus
 		BIND(RemoveEffectsNotOfType);
 		BIND(SendFECResetEvent, true);
 
-	    BIND(GetPermanentDeathEffect, true);
+		BIND(GetPermanentDeathEffect, true);
 		BIND(GetTemporaryDeathEffect, true);
 
-	    BIND(AssignPermanentDeathEffect, true);
+		BIND(AssignPermanentDeathEffect, true);
 		BIND(AssignTemporaryDeathEffect, true);
 
-		BIND_EVENT(RegisterForFECReset, true);
-		BIND_EVENT(UnregisterForFECReset, true);
-		BIND_EVENT(UnregisterForAllFECResets, true);
+		BIND(RegisterForFECReset, true);
+		BIND(RegisterForFECReset_Form, true);
+
+		BIND(UnregisterForFECReset, true);
+		BIND(UnregisterForFECReset_Form, true);
+
+		BIND(UnregisterForAllFECResets, true);
+		BIND(UnregisterForFECReset_Form, true);
+
+		BIND(VaporizeUnderwear);
 
 		logger::info("Registered FEC functions"sv);
 

@@ -52,7 +52,6 @@ namespace stl
 #endif
 
 #define BIND(a_method, ...) a_vm->RegisterFunction(#a_method##sv, obj, a_method __VA_OPT__(, ) __VA_ARGS__)
-#define BIND_EVENT(a_method, ...) a_vm->RegisterFunction(#a_method##sv, obj, a_method __VA_OPT__(, ) __VA_ARGS__)
 
 #include "Version.h"
 #include "Globals.h"

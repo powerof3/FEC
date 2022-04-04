@@ -555,12 +555,13 @@ namespace FEC::GRAPHICS
 						const auto tempType = Manager::GetSingleton()->temporaryEffectMap.find(actor->GetFormID());
 
 						if (permType && *permType != PermEffect::kNone) {
-							if (const auto name = a_object->name; !name.empty()) {
-								if (std::ranges::find(underwear::underwears, name.c_str()) != underwear::underwears.end() && (*permType == PermEffect::kCharred || *permType == PermEffect::kSkeletonized)) {
-									SET::Toggle(root, a_object, true);
-								} else if (a_object->HasShaderType(Feature::kFaceGenRGBTint)) {
-									SET::SkinAlpha(root, a_object, 0.0f);
+							if (*permType == PermEffect::kCharred || *permType == PermEffect::kSkeletonized) {
+								if (const auto& name = a_object->name; !name.empty() && std::ranges::find(underwear::underwears, name.c_str()) != underwear::underwears.end()) {
+							        SET::Toggle(root, a_object, true);
 								}
+							}
+							if (a_object->HasShaderType(Feature::kFaceGenRGBTint)) {
+								SET::SkinAlpha(root, a_object, 0.0f);
 							}
 						} else if (tempType && !tempType->empty()) {
 							if (const auto name = a_object->name; !name.empty()) {
@@ -621,9 +622,9 @@ namespace FEC::GRAPHICS
 				static inline REL::Relocation<decltype(thunk)> func;
 			};
 
-			struct ProcessObject
+			struct HideShowBufferedSkin
 			{
-				static void thunk(RE::BipedAnim* a_biped, RE::NiAVObject* a_object, std::int32_t a_slot, bool a_unk04)
+				static void thunk(RE::BipedAnim* a_biped, RE::NiAVObject* a_object, RE::BIPED_OBJECT a_slot, bool a_unk04)
 				{
 					func(a_biped, a_object, a_slot, a_unk04);
 
@@ -632,7 +633,7 @@ namespace FEC::GRAPHICS
 				static inline REL::Relocation<decltype(thunk)> func;
 			};
 
-			struct PerformNPCDismember
+			struct UpdateHeadAndHair
 			{
 				static void thunk(RE::TESNPC* a_npc, RE::Actor* a_actor, RE::NiAVObject* a_node)
 				{
@@ -672,11 +673,11 @@ namespace FEC::GRAPHICS
 				REL::Relocation<std::uintptr_t> processAttachedGeometry{ RELOCATION_ID(15535, 15712), OFFSET(0x79A, 0x72F) };  //armor
 				stl::write_thunk_call<ProcessGeometry>(processAttachedGeometry.address());
 
-				REL::Relocation<std::uintptr_t> attachArmorAddon{ RELOCATION_ID(15501, 15678), 0x1EA };  //armor 2
-				stl::write_thunk_call<ProcessObject>(attachArmorAddon.address());
+				REL::Relocation<std::uintptr_t> loadBipedParts{ RELOCATION_ID(15501, 15678), 0x1EA };  //armor 2
+				stl::write_thunk_call<HideShowBufferedSkin>(loadBipedParts.address());
 
-				REL::Relocation<std::uintptr_t> processArmorAttach{ RELOCATION_ID(24236, 24740), OFFSET(0x33E, 0x562) };  // head
-				stl::write_thunk_call<PerformNPCDismember>(processArmorAttach.address());
+				REL::Relocation<std::uintptr_t> replaceRefModel{ RELOCATION_ID(24236, 24740), OFFSET(0x33E, 0x562) };  // head
+				stl::write_thunk_call<UpdateHeadAndHair>(replaceRefModel.address());
 
 				logger::info("Hooked armor attach.");
 			}

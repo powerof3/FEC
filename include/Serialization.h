@@ -44,7 +44,8 @@ namespace FEC::Serialization
 
 	class Manager :
 		public RE::BSTEventSink<RE::TESFormDeleteEvent>,
-		public RE::BSTEventSink<RE::TESResetEvent>
+		public RE::BSTEventSink<RE::TESResetEvent>,
+		public RE::BSTEventSink<RE::TESLoadGameEvent>
 	{
 	public:
 		using TempEffectSet = robin_hood::unordered_flat_set<ActorEffect::Temporary>;
@@ -123,6 +124,7 @@ namespace FEC::Serialization
 
 						_map.emplace(formID, static_cast<T>(effect));
 					}
+
 				} else {
 				    RE::FormID formID;
 					std::size_t numEffects;
@@ -218,6 +220,7 @@ namespace FEC::Serialization
 			if (const auto scripts = RE::ScriptEventSourceHolder::GetSingleton()) {
 				scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
 				scripts->AddEventSink<RE::TESResetEvent>(GetSingleton());
+				scripts->AddEventSink<RE::TESLoadGameEvent>(GetSingleton());
 				logger::info("Registered form deletion event handler"sv);
 			}
 		}
@@ -231,6 +234,7 @@ namespace FEC::Serialization
 
 		EventResult ProcessEvent(const RE::TESFormDeleteEvent* a_event, RE::BSTEventSource<RE::TESFormDeleteEvent>*) override;
 		EventResult ProcessEvent(const RE::TESResetEvent* a_event, RE::BSTEventSource<RE::TESResetEvent>*) override;
+		EventResult ProcessEvent(const RE::TESLoadGameEvent* a_event, RE::BSTEventSource<RE::TESLoadGameEvent>*) override;
 
 		ActorEffectMap<ActorEffect::Permanent> permanentEffectMap;
 		ActorEffectMap<TempEffectSet> temporaryEffectMap;

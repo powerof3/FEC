@@ -1,5 +1,8 @@
 #include "Serialization.h"
 
+extern RE::SpellItem* deathEffectsAbility;
+extern RE::SpellItem* deathEffectsPCAbility;
+
 namespace FEC::Serialization
 {
 	std::string DecodeTypeCode(std::uint32_t a_typeCode)
@@ -77,8 +80,62 @@ namespace FEC::Serialization
 		return EventResult::kContinue;
 	}
 
-	EventResult Manager::ProcessEvent(const RE::TESResetEvent*, RE::BSTEventSource<RE::TESResetEvent>*)
+	EventResult Manager::ProcessEvent(const RE::TESResetEvent* a_event, RE::BSTEventSource<RE::TESResetEvent>*)
 	{
+		if (!a_event || !a_event->object) {
+			return EventResult::kContinue;
+		}
+
+		const auto actor = a_event->object->As<RE::Actor>();
+		if (!actor) {
+			return EventResult::kContinue;
+		}
+
+		if (permanentEffectMap.contains(actor->formID)) {
+			if (!actor->IsAIEnabled()) {
+				actor->EnableAI(true);
+			}
+			permanentEffectMap.assign(actor->formID, ActorEffect::Permanent::kReset);
+		}
+		if (temporaryEffectMap.contains(actor->formID)) {
+			temporaryEffectMap.reset(actor->formID, ActorEffect::Temporary::kReset);
+		}
+
+		return EventResult::kContinue;
+	}
+
+	EventResult Manager::ProcessEvent(const RE::TESLoadGameEvent* a_event, RE::BSTEventSource<RE::TESLoadGameEvent>*)
+	{
+		if (!a_event) {
+			return EventResult::kContinue;
+		}
+
+	    if (const auto player = RE::PlayerCharacter::GetSingleton(); player) {
+			player->RemoveSpell(deathEffectsPCAbility);
+			player->AddSpell(deathEffectsPCAbility);
+		}
+
+		if (const auto processLists = RE::ProcessLists::GetSingleton()) {
+			constexpr auto has_base_spell = [](const RE::NiPointer<RE::Actor>& a_actor, RE::SpellItem* a_spell) {
+				const auto base = a_actor->GetActorBase();
+				const auto spellList = base ? base->GetSpellList() : nullptr;
+
+				if (spellList && spellList->spells && spellList->numSpells > 0) {
+					std::span<RE::SpellItem*> span(spellList->spells, spellList->numSpells);
+					return std::ranges::find(span, a_spell) != span.end();
+				}
+
+				return false;
+			};
+
+		    for (auto& actorHandle : processLists->highActorHandles) {
+				if (const auto actor = actorHandle.get(); actor && has_base_spell(actor, deathEffectsAbility)) {
+					actor->RemoveSpell(deathEffectsAbility);
+					actor->AddSpell(deathEffectsAbility);
+				}
+			}
+		}
+
 		return EventResult::kContinue;
 	}
 
