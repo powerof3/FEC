@@ -399,17 +399,6 @@ namespace FEC::Papyrus
 		regs.Unregister(a_activeEffect, a_type);
 	}
 
-	void UnregisterForFECReset_Form(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::TESForm* a_form, std::uint32_t a_type)
-	{
-		if (!a_form) {
-			a_vm->TraceStack("Form is None", a_stackID);
-			return;
-		}
-
-		auto& regs = Serialization::Manager::GetSingleton()->FECreset;
-		regs.Unregister(a_form, a_type);
-	}
-
 	void UnregisterForAllFECResets(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::ActiveEffect* a_activeEffect)
 	{
 		if (!a_activeEffect) {
@@ -419,17 +408,6 @@ namespace FEC::Papyrus
 
 		auto& regs = Serialization::Manager::GetSingleton()->FECreset;
 		regs.UnregisterAll(a_activeEffect);
-	}
-
-	void UnregisterForAllFECResets_Form(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::TESForm* a_form)
-	{
-		if (!a_form) {
-			a_vm->TraceStack("Form is None", a_stackID);
-			return;
-		}
-
-		auto& regs = Serialization::Manager::GetSingleton()->FECreset;
-		regs.UnregisterAll(a_form);
 	}
 
 	void VaporizeUnderwear(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor)
@@ -479,10 +457,7 @@ namespace FEC::Papyrus
 		BIND(RegisterForFECReset_Form, true);
 
 		BIND(UnregisterForFECReset, true);
-		BIND(UnregisterForFECReset_Form, true);
-
 		BIND(UnregisterForAllFECResets, true);
-		BIND(UnregisterForFECReset_Form, true);
 
 		BIND(VaporizeUnderwear);
 

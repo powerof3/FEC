@@ -1,4 +1,5 @@
 #include "Serialization.h"
+#include "Patches.h"
 
 extern RE::SpellItem* deathEffectsAbility;
 extern RE::SpellItem* deathEffectsPCAbility;
@@ -110,28 +111,32 @@ namespace FEC::Serialization
 			return EventResult::kContinue;
 		}
 
-	    if (const auto player = RE::PlayerCharacter::GetSingleton(); player) {
+		if (const auto player = RE::PlayerCharacter::GetSingleton(); player) {
 			player->RemoveSpell(deathEffectsPCAbility);
 			player->AddSpell(deathEffectsPCAbility);
 		}
 
 		if (const auto processLists = RE::ProcessLists::GetSingleton()) {
-			constexpr auto has_base_spell = [](const RE::NiPointer<RE::Actor>& a_actor, RE::SpellItem* a_spell) {
-				const auto base = a_actor->GetActorBase();
-				const auto spellList = base ? base->GetSpellList() : nullptr;
-
-				if (spellList && spellList->spells && spellList->numSpells > 0) {
-					std::span<RE::SpellItem*> span(spellList->spells, spellList->numSpells);
+			constexpr auto has_base_spell = [](const RE::TESSpellList::SpellData* a_spellList, RE::SpellItem* a_spell) {
+				if (a_spellList->spells && a_spellList->numSpells > 0) {
+					std::span span(a_spellList->spells, a_spellList->numSpells);
 					return std::ranges::find(span, a_spell) != span.end();
 				}
-
 				return false;
 			};
 
-		    for (auto& actorHandle : processLists->highActorHandles) {
-				if (const auto actor = actorHandle.get(); actor && has_base_spell(actor, deathEffectsAbility)) {
-					actor->RemoveSpell(deathEffectsAbility);
-					actor->AddSpell(deathEffectsAbility);
+			for (auto& actorHandle : processLists->highActorHandles) {
+				const auto actor = actorHandle.get();
+				const auto actorbase = actor ? actor->GetActorBase() : nullptr;
+				const auto spellList = actorbase ? actorbase->GetSpellList() : nullptr;
+
+			    if (actor && actorbase && spellList) {
+					if (has_base_spell(spellList, deathEffectsAbility)) {
+						actor->RemoveSpell(deathEffectsAbility);
+						actor->AddSpell(deathEffectsAbility);
+					} else if (DISTRIBUTE::CanDeathEffectsBeAdded(actorbase)) {
+						spellList->AddSpell(deathEffectsAbility);
+					}
 				}
 			}
 		}

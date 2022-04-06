@@ -14,6 +14,8 @@ namespace FEC
 
 	namespace DISTRIBUTE
 	{
-		void Install();
+		bool CanDeathEffectsBeAdded(RE::TESNPC* a_npc);
+
+	    void Install();
 	}
 }

@@ -102,6 +102,13 @@ namespace FEC
 		inline constexpr auto Frost{ "MagicDamageFrost"sv };
 		inline constexpr auto Shock{ "MagicDamageShock"sv };
 		inline constexpr auto Paralysis{ "MagicParalysis"sv };
+
+	    inline constexpr auto Ghost{ "ActorTypeGhost"sv };
+		inline constexpr auto NPC{ "ActorTypeNPC"sv };
+		inline constexpr auto Animal{ "ActorTypeAnimal"sv };
+		inline constexpr auto Creature{ "ActorTypeCreature"sv };
+		inline constexpr auto Dragon{ "ActorTypeDragon"sv };
+		inline constexpr auto Daedra{ "ActorTypeDaedra"sv };
 	}
 
 	namespace list

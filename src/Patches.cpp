@@ -29,7 +29,7 @@ namespace FEC
 						std::span<RE::TESTopicInfo*> span(topic->topicInfos, topic->numTopicInfos);
 						for (const auto& topicInfo : span) {
 							if (topicInfo && topicInfo->data.flags.none(Flags::kNoLIPFile)) {
-                                const auto newNode = new RE::TESConditionItem;
+								const auto newNode = new RE::TESConditionItem;
 
 								newNode->next = nullptr;
 								newNode->data.comparisonValue.f = 0.0f;
@@ -114,10 +114,10 @@ namespace FEC
 
 		void Cooking()
 		{
-            const auto dataHandler = RE::TESDataHandler::GetSingleton();
+			const auto dataHandler = RE::TESDataHandler::GetSingleton();
 
-            const auto listFoodRaw = dataHandler->LookupForm<RE::BGSListForm>(list::rawFood, "FEC.esp");
-            const auto listFoodCooked = dataHandler->LookupForm<RE::BGSListForm>(list::cookedFood, "FEC.esp");
+			const auto listFoodRaw = dataHandler->LookupForm<RE::BGSListForm>(list::rawFood, "FEC.esp");
+			const auto listFoodCooked = dataHandler->LookupForm<RE::BGSListForm>(list::cookedFood, "FEC.esp");
 
 			if (dataHandler->LookupModByName("Complete Alchemy & Cooking Overhaul.esp")) {
 				for (auto& [rawID, cookedID] : food::caco_map) {
@@ -200,29 +200,30 @@ namespace FEC
 
 	namespace DISTRIBUTE
 	{
+		bool CanDeathEffectsBeAdded(RE::TESNPC* a_npc)
+		{
+			if (a_npc->IsSummonable() || a_npc->HasKeyword(keyword::Ghost) || a_npc->IsGhost()) {
+				return false;
+			}
+
+			if (a_npc->HasKeyword(keyword::NPC)) {
+				const auto race = a_npc->GetRace();
+			    const std::string raceName = race ? race->GetFormEditorID() : std::string();
+				return !raceName.contains("Child");
+			}
+
+			if (a_npc->HasKeyword(keyword::Creature) || a_npc->HasKeyword(keyword::Animal)) {
+				return !(a_npc->HasKeyword(keyword::Dragon) || a_npc->HasKeyword(keyword::Daedra));
+			}
+
+			return false;
+		}
+
 		void DeathEffect()
 		{
 			if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-				constexpr auto can_be_added = [](RE::TESNPC* a_npc) {
-					if (a_npc->IsSummonable() || a_npc->HasKeyword("ActorTypeGhost"sv) || a_npc->IsGhost()) {
-						return false;
-					}
-
-					if (a_npc->HasKeyword("ActorTypeNPC"sv)) {
-						const auto race = a_npc->GetRace();
-						const std::string raceName = race ? race->GetFormEditorID() : std::string();
-						return !raceName.contains("Child");
-					}
-
-					if (a_npc->HasKeyword("ActorTypeCreature"sv) || a_npc->HasKeyword("ActorTypeAnimal"sv)) {
-						return !(a_npc->HasKeyword("ActorTypeDragon"sv) || a_npc->HasKeyword("ActorTypeDaedra"sv));
-					}
-
-					return false;
-				};
-
 				for (const auto& actorbase : dataHandler->GetFormArray<RE::TESNPC>()) {
-					if (actorbase && !actorbase->IsPlayer() && can_be_added(actorbase)) {
+					if (actorbase && !actorbase->IsPlayer() && CanDeathEffectsBeAdded(actorbase)) {
 						if (const auto actorEffects = actorbase->GetSpellList(); actorEffects) {
 							actorEffects->AddSpell(deathEffectsAbility);
 						}
