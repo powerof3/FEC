@@ -1,6 +1,6 @@
 #include "Graphics.h"
-#include "Patches.h"
 #include "Papyrus.h"
+#include "Patches.h"
 #include "Serialization.h"
 
 //GLOBAL VARS
@@ -141,7 +141,7 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 	case SKSE::MessagingInterface::kPostLoad:
 		{
 			if (const auto vec = RequirementsCheck::GetError(); !vec.empty() && vec.size() == 2) {
-                const auto id = WinAPI::MessageBox(nullptr, vec[0].c_str(), vec[1].c_str(), 0x00000004);
+				const auto id = WinAPI::MessageBox(nullptr, vec[0].c_str(), vec[1].c_str(), 0x00000004);
 				if (id == 2) {
 					std::_Exit(EXIT_FAILURE);
 				}
@@ -151,7 +151,7 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
 			if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-			    mod = const_cast<RE::TESFile*>(dataHandler->LookupModByName("FEC.esp"));
+				mod = const_cast<RE::TESFile*>(dataHandler->LookupModByName("FEC.esp"));
 
 				if (!mod) {
 					logger::error("unable to find FEC.esp");
@@ -166,19 +166,23 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 				}
 			}
 
-            FEC::GRAPHICS::Install();
+			FEC::GRAPHICS::Install();
 
 			FEC::PATCH::Install();
 
 			FEC::DISTRIBUTE::Install();
 
-		    FEC::Serialization::Manager::Register();
+			FEC::Serialization::Manager::Register();
 		}
 		break;
 	case SKSE::MessagingInterface::kPostLoadGame:
 	case SKSE::MessagingInterface::kNewGame:
 		{
-			FEC::POST_LOAD_PATCH::Install();
+			if (mod && deathEffectsAbility && deathEffectsPCAbility) {
+				FEC::POST_LOAD_PATCH::Install();
+			} else if (const auto consoleLog = RE::ConsoleLog::GetSingleton()) {
+				consoleLog->Print("[FEC] FEC.esp is not installed!");
+			}
 		}
 		break;
 	default:
@@ -244,7 +248,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 {
 	InitializeLog();
 
-    logger::info("loaded");
+	logger::info("loaded");
 
 	SKSE::Init(a_skse);
 	SKSE::AllocTrampoline(75);

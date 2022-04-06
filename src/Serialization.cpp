@@ -132,10 +132,10 @@ namespace FEC::Serialization
 
 			    if (actor && actorbase && spellList) {
 					if (has_base_spell(spellList, deathEffectsAbility)) {
-						actor->RemoveSpell(deathEffectsAbility);
+					    actor->RemoveSpell(deathEffectsAbility);
 						actor->AddSpell(deathEffectsAbility);
 					} else if (DISTRIBUTE::CanDeathEffectsBeAdded(actorbase)) {
-						spellList->AddSpell(deathEffectsAbility);
+					    spellList->AddSpell(deathEffectsAbility);
 					}
 				}
 			}
