@@ -93,12 +93,14 @@ namespace FEC::Serialization
 		}
 
 		if (permanentEffectMap.contains(actor->formID)) {
-			if (!actor->IsAIEnabled()) {
+		    if (!actor->IsAIEnabled()) {
 				actor->EnableAI(true);
 			}
-			permanentEffectMap.assign(actor->formID, ActorEffect::Permanent::kReset);
+			if (!actor->IsDead()) {
+				permanentEffectMap.assign(actor->formID, ActorEffect::Permanent::kReset);
+			}
 		}
-		if (temporaryEffectMap.contains(actor->formID)) {
+		if (temporaryEffectMap.contains(actor->formID) && !actor->IsDead()) {
 			temporaryEffectMap.reset(actor->formID, ActorEffect::Temporary::kReset);
 		}
 
