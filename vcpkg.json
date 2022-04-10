@@ -1,16 +1,24 @@
 {
   "name": "fec",
-  "version-string": "4.9.0",
+  "version-string": "5.0.0",
   "description": "FEC Helper plugin",
   "homepage": "https://github.com/powerof3/FEC",
   "license": "MIT",
   "dependencies": [
-    "boost-algorithm",
     "boost-stl-interfaces",
 	  "rsm-binary-io",
     "frozen",
+    "rsm-binary-io",
+    "robin-hood-hashing",
     "simpleini",
     "spdlog",
     "xbyak"
+  ],
+  "builtin-baseline": "c06dfc0ac2649834da8b9f3092b907fb037accab",
+  "overrides": [
+    {
+      "name": "fmt",
+      "version": "8.0.1"
+    }
   ]
 }

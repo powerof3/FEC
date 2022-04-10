@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 3.20)
 set(NAME "po3_FEC")
-set(VERSION 4.9.6)
+set(VERSION 5.0.0)
 set(VR_VERSION 1)
+set(AE_VERSION 1)
 
 # ---- Options ----
 
 option(COPY_BUILD "Copy the build output to the Skyrim directory." TRUE)
 option(BUILD_SKYRIMVR "Build for Skyrim VR" OFF)
+option(BUILD_SKYRIMAE "Build for Skyrim AE" OFF)
 
 # ---- Cache build vars ----
 
@@ -16,28 +18,45 @@ macro(set_from_environment VARIABLE)
 	endif ()
 endmacro()
 
+macro(find_commonlib_path)
+	if (CommonLibName AND NOT ${CommonLibName} STREQUAL "")
+		# Check extern
+		find_path(CommonLibPath
+		include/REL/Relocation.h
+		PATHS external/${CommonLibName})
+		if (${CommonLibPath} STREQUAL "CommonLibPath-NOTFOUND")
+			#Check path
+			set_from_environment(${CommonLibName}Path)
+			set(CommonLibPath ${${CommonLibName}Path})
+		endif()
+	endif()
+endmacro()
+
 set_from_environment(VCPKG_ROOT)
-if(BUILD_SKYRIMVR)
+if(BUILD_SKYRIMAE)
+	add_compile_definitions(SKYRIM_AE)
+	set(CommonLibName "CommonLibSSE")
+	set_from_environment(SkyrimAEPath)
+	set(SkyrimPath ${SkyrimAEPath})
+	set(SkyrimVersion "Skyrim AE")
+	set(VERSION ${VERSION}.${AE_VERSION})
+elseif(BUILD_SKYRIMVR)
 	add_compile_definitions(SKYRIMVR)
-	add_compile_definitions(SKYRIMVR)
-	set_from_environment(CommonLibVRPath)
-	set(CommonLibPath ${CommonLibVRPath})
 	set(CommonLibName "CommonLibVR")
 	set_from_environment(SkyrimVRPath)
 	set(SkyrimPath ${SkyrimVRPath})
 	set(SkyrimVersion "Skyrim VR")
-	set(VERSION "${VERSION}.${VR_VERSION}")
+	set(VERSION ${VERSION}.${VR_VERSION})
 else()
-	set_from_environment(CommonLibSSEPath)
-	set(CommonLibPath ${CommonLibSSEPath})
 	set(CommonLibName "CommonLibSSE")
 	set_from_environment(Skyrim64Path)
 	set(SkyrimPath ${Skyrim64Path})
 	set(SkyrimVersion "Skyrim SSE")
 endif()
+find_commonlib_path()
 message(
 	STATUS
-	"Building for ${SkyrimVersion} at ${SkyrimPath} with ${CommonLibName} at ${CommonLibPath}."
+	"Building ${NAME} ${VERSION} for ${SkyrimVersion} at ${SkyrimPath} with ${CommonLibName} at ${CommonLibPath}."
 )
 
 if (DEFINED VCPKG_ROOT)
@@ -51,7 +70,6 @@ else ()
 endif ()
 
 set(Boost_USE_STATIC_RUNTIME OFF CACHE BOOL "")
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "")
 
 # ---- Project ----
 
@@ -88,6 +106,12 @@ add_compile_definitions(
 	SKSE_SUPPORT_XBYAK
 )
 
+if (BUILD_SKYRIMAE)
+	add_compile_definitions(
+		SKYRIM_SUPPORT_AE
+	)
+endif()
+
 if (MSVC)
 	add_compile_definitions(
 		_UNICODE
@@ -104,6 +128,7 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
 
 set(Boost_USE_STATIC_LIBS ON)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "")
 
 # ---- Dependencies ----
 
@@ -116,9 +141,7 @@ else ()
 	)
 endif()
 
-find_package(Boost MODULE REQUIRED)
-find_package(spdlog REQUIRED CONFIG)
-find_package(xbyak REQUIRED CONFIG)
+find_package(frozen CONFIG REQUIRED)
 
 # ---- Add source files ----
 
@@ -156,23 +179,23 @@ add_library(
 target_compile_features(
 	${PROJECT_NAME}
 	PRIVATE
-		cxx_std_20
+		cxx_std_23
 )
 
 target_include_directories(
 	${PROJECT_NAME}
 	PRIVATE
 		${CMAKE_CURRENT_BINARY_DIR}/include
-		${CMAKE_CURRENT_SOURCE_DIR}/src/C++
+		${CMAKE_CURRENT_SOURCE_DIR}/include
+		${CommonLibPath}/x64/Release
 )
+
 
 target_link_libraries(
 	${PROJECT_NAME}
 	PRIVATE
-		Boost::headers
 		${CommonLibName}::${CommonLibName}
-		spdlog::spdlog
-		xbyak::xbyak
+		frozen::frozen
 )
 
 if (MSVC)
@@ -225,16 +248,16 @@ if (MSVC)
 			"$<$<CONFIG:DEBUG>:/INCREMENTAL;/OPT:NOREF;/OPT:NOICF>"
 			"$<$<CONFIG:RELEASE>:/INCREMENTAL:NO;/OPT:REF;/OPT:ICF;/DEBUG:FULL>"
 	)
-	
+
 	# fix a warning with /Ob2 being overridden with /Ob3
 	string(REPLACE "/Ob2" "/Ob3" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
-	
+
 endif ()
 
 target_precompile_headers(
 	${PROJECT_NAME}
 	PRIVATE
-		src/PCH.h
+		include/PCH.h
 )
 
 # ---- Post build ----
