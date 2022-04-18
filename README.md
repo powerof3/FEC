@@ -39,14 +39,18 @@ cd FEC
 ```
 ### SSE
 ```
-cmake -B build -S .
+cmake --preset vs2022-windows-vcpkg # for vs2019 use vs2019-windows-vcpkg
+cmake --build build --config Release
 ```
-Open build/po3_FEC.sln in Visual Studio to build dll.
+### AE
+```
+cmake --preset vs2022-windows-vcpkg-ae # for vs2019 use vs2019-windows-vcpkg-ae
+cmake --build buildae --config Release
+```
 ### VR
 ```
-cmake -B build2 -S . -DBUILD_SKYRIMVR=On
-```
-Open build2/po3_FEC.sln in Visual Studio to build dll.
+cmake --preset vs2022-windows-vcpkg-vr # for vs2019 use vs2019-windows-vcpkg-vr
+cmake --build buildvr --config Release
 
 
 ## License
