@@ -670,10 +670,10 @@ namespace FEC::GRAPHICS
 
 			void Install()
 			{
-				REL::Relocation<std::uintptr_t> processAttachedGeometry{ RELOCATION_ID(15535, 15712), OFFSET(0x79A, 0x72F) };  //armor
+				REL::Relocation<std::uintptr_t> processAttachedGeometry{ RELOCATION_ID(15535, 15712), OFFSET_3(0x79A, 0x72F, 0x7D4) };  //armor
 				stl::write_thunk_call<ProcessGeometry>(processAttachedGeometry.address());
 
-				REL::Relocation<std::uintptr_t> loadBipedParts{ RELOCATION_ID(15501, 15678), 0x1EA };  //armor 2
+				REL::Relocation<std::uintptr_t> loadBipedParts{ RELOCATION_ID(15501, 15678), OFFSET_3(0x1EA, 0x1EA, 0x1E7) };  //armor 2
 				stl::write_thunk_call<HideShowBufferedSkin>(loadBipedParts.address());
 
 				REL::Relocation<std::uintptr_t> replaceRefModel{ RELOCATION_ID(24236, 24740), OFFSET(0x33E, 0x562) };  // head

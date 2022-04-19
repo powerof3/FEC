@@ -66,22 +66,34 @@ namespace FEC::Papyrus
 			return vec;
 		}
 
+#ifndef SKYRIMVR
 		const auto activeEffects = a_actor->GetActiveEffectList();
 		if (!activeEffects) {
 			a_vm->TraceForm(a_actor, "has no active effects", a_stackID, Severity::kInfo);
 			return vec;
 		}
+#endif
 
 		deathEffectPair effectPair{ -1, nullptr };
 		deathEffectMap effectMap{};
 
 		const auto deathMode = static_cast<DEATH::MODE>(a_type);
 
+#ifndef SKYRIMVR
 		for (const auto& activeEffect : *activeEffects) {
 			if (detail::process_active_effect(activeEffect, deathMode, effectPair, effectMap)) {
 				break;
 			}
 		}
+#else
+		//VR work around because GetActiveEffectList does not return a BSSimpleList like in SSE
+		a_actor->VisitActiveEffects([&](RE::ActiveEffect* activeEffect) -> RE::BSContainer::ForEachResult {
+			if (detail::process_active_effect(activeEffect, deathMode, effectPair, effectMap)) {
+				return RE::BSContainer::ForEachResult::kStop;
+			}
+			return RE::BSContainer::ForEachResult::kContinue;
+		});
+#endif
 
 		if (effectPair.first == DEATH::TYPE::kNone && !effectMap.empty()) {
 			constexpr auto mag_cmp = [](const auto& a_lhs, const auto& a_rhs) {

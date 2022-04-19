@@ -1,11 +1,13 @@
 cmake_minimum_required(VERSION 3.20)
 set(NAME "po3_FEC")
 set(VERSION 5.0.0)
+set(VR_VERSION 1)
 set(AE_VERSION 1)
 
 # ---- Options ----
 
 option(COPY_BUILD "Copy the build output to the Skyrim directory." TRUE)
+option(BUILD_SKYRIMVR "Build for Skyrim VR" OFF)
 option(BUILD_SKYRIMAE "Build for Skyrim AE" OFF)
 
 # ---- Cache build vars ----
@@ -38,6 +40,13 @@ if(BUILD_SKYRIMAE)
 	set(SkyrimPath ${SkyrimAEPath})
 	set(SkyrimVersion "Skyrim AE")
 	set(VERSION ${VERSION}.${AE_VERSION})
+elseif(BUILD_SKYRIMVR)
+	add_compile_definitions(SKYRIMVR)
+	set(CommonLibName "CommonLibVR")
+	set_from_environment(SkyrimVRPath)
+	set(SkyrimPath ${SkyrimVRPath})
+	set(SkyrimVersion "Skyrim VR")
+	set(VERSION ${VERSION}.${VR_VERSION})
 else()
 	set(CommonLibName "CommonLibSSE")
 	set_from_environment(Skyrim64Path)
@@ -239,10 +248,10 @@ if (MSVC)
 			"$<$<CONFIG:DEBUG>:/INCREMENTAL;/OPT:NOREF;/OPT:NOICF>"
 			"$<$<CONFIG:RELEASE>:/INCREMENTAL:NO;/OPT:REF;/OPT:ICF;/DEBUG:FULL>"
 	)
-	
+
 	# fix a warning with /Ob2 being overridden with /Ob3
 	string(REPLACE "/Ob2" "/Ob3" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
-	
+
 endif ()
 
 target_precompile_headers(

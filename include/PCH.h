@@ -47,8 +47,13 @@ namespace stl
 
 #ifdef SKYRIM_AE
 #	define OFFSET(se, ae) ae
+#	define OFFSET_3(se, ae, vr) ae
+#elif SKYRIMVR
+#	define OFFSET(se, ae) se
+#	define OFFSET_3(se, ae, vr) vr
 #else
 #	define OFFSET(se, ae) se
+#	define OFFSET_3(se, ae, vr) se
 #endif
 
 #define BIND(a_method, ...) a_vm->RegisterFunction(#a_method##sv, obj, a_method __VA_OPT__(, ) __VA_ARGS__)
