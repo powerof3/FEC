@@ -63,16 +63,6 @@ namespace FEC::GRAPHICS
 
 	namespace ARMOR
 	{
-		namespace factions
-		{
-			inline constexpr std::array effects = {
-				"FEC - Charred"sv,
-				"FEC - Skeletonized"sv,
-				"FEC - Drained"sv,
-				"FEC - XRay"sv
-			};
-		}
-
 		namespace ATTACH
 		{
 			void Install();

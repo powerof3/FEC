@@ -66,7 +66,7 @@ namespace FEC
 				std::uint32_t rieklingCount = 0;
 
 				for (const auto& actorbase : dataHandler->GetFormArray<RE::TESNPC>()) {
-					if (actorbase && !actorbase->HasKeyword("ActorTypeNPC"sv)) {
+					if (actorbase && !actorbase->HasApplicableKeywordString("ActorTypeNPC"sv)) {
 						if (actorbase->IsInFaction(falmerFaction)) {
 							falmerCount++;
 							actorbase->bodyTintColor = color::falmer;
@@ -202,18 +202,18 @@ namespace FEC
 	{
 		bool CanDeathEffectsBeAdded(RE::TESNPC* a_npc)
 		{
-			if (a_npc->IsSummonable() || a_npc->HasKeyword(keyword::Ghost) || a_npc->IsGhost()) {
+			if (a_npc->IsSummonable() || a_npc->HasApplicableKeywordString(keyword::Ghost) || a_npc->IsGhost()) {
 				return false;
 			}
 
-			if (a_npc->HasKeyword(keyword::NPC)) {
+			if (a_npc->HasApplicableKeywordString(keyword::NPC)) {
 				const auto race = a_npc->GetRace();
 			    const std::string raceName = race ? race->GetFormEditorID() : std::string();
 				return !raceName.contains("Child");
 			}
 
-			if (a_npc->HasKeyword(keyword::Creature) || a_npc->HasKeyword(keyword::Animal)) {
-				return !(a_npc->HasKeyword(keyword::Dragon) || a_npc->HasKeyword(keyword::Daedra));
+			if (a_npc->HasApplicableKeywordString(keyword::Creature) || a_npc->HasApplicableKeywordString(keyword::Animal)) {
+				return !(a_npc->HasApplicableKeywordString(keyword::Dragon) || a_npc->HasApplicableKeywordString(keyword::Daedra));
 			}
 
 			return false;

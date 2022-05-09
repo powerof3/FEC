@@ -93,7 +93,7 @@ namespace FEC::Serialization
 		}
 
 		if (permanentEffectMap.contains(actor->formID)) {
-		    if (!actor->IsAIEnabled()) {
+			if (!actor->IsAIEnabled()) {
 				actor->EnableAI(true);
 			}
 			if (!actor->IsDead()) {
@@ -132,12 +132,12 @@ namespace FEC::Serialization
 				const auto actorbase = actor ? actor->GetActorBase() : nullptr;
 				const auto spellList = actorbase ? actorbase->GetSpellList() : nullptr;
 
-			    if (actor && actorbase && spellList) {
+				if (actor && actorbase && spellList) {
 					if (has_base_spell(spellList, deathEffectsAbility)) {
-					    actor->RemoveSpell(deathEffectsAbility);
+						actor->RemoveSpell(deathEffectsAbility);
 						actor->AddSpell(deathEffectsAbility);
 					} else if (DISTRIBUTE::CanDeathEffectsBeAdded(actorbase)) {
-					    spellList->AddSpell(deathEffectsAbility);
+						spellList->AddSpell(deathEffectsAbility);
 					}
 				}
 			}

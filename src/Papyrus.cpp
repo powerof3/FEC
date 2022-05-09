@@ -40,7 +40,7 @@ namespace FEC::Papyrus
 						a_effectMap[DEATH::TYPE::kDrain].emplace_back(mgef, -a_activeEffect->magnitude);
 					}
 				} else {
-					if (mgef->data.resistVariable == RE::ActorValue::kPoisonResist && mgef->data.castingType != CAST_TYPE::kConcentration) {
+					if (mgef->data.resistVariable == RE::ActorValue::kPoisonResist /*&& mgef->data.castingType != CAST_TYPE::kConcentration*/) {
 						a_effectMap[DEATH::TYPE::kPoison].emplace_back(mgef, -a_activeEffect->magnitude);
 					} else if (mgef->GetArchetype() == Archetype::kDemoralize) {
 						a_effectMap[DEATH::TYPE::kFear].emplace_back(mgef, -a_activeEffect->magnitude);
@@ -411,7 +411,18 @@ namespace FEC::Papyrus
 		regs.Unregister(a_activeEffect, a_type);
 	}
 
-	void UnregisterForAllFECResets(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::ActiveEffect* a_activeEffect)
+    void UnregisterForFECReset_Form(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::TESForm* a_form, std::uint32_t a_type)
+	{
+		if (!a_form) {
+			a_vm->TraceStack("Form is None", a_stackID);
+			return;
+		}
+
+		auto& regs = Serialization::Manager::GetSingleton()->FECreset;
+		regs.Unregister(a_form, a_type);
+	}
+
+    void UnregisterForAllFECResets(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::ActiveEffect* a_activeEffect)
 	{
 		if (!a_activeEffect) {
 			a_vm->TraceStack("Active Effect is None", a_stackID);
@@ -422,7 +433,18 @@ namespace FEC::Papyrus
 		regs.UnregisterAll(a_activeEffect);
 	}
 
-	void VaporizeUnderwear(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor)
+    void UnregisterForAllFECResets_Form(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::TESForm* a_form)
+	{
+		if (!a_form) {
+			a_vm->TraceStack("Form is None", a_stackID);
+			return;
+		}
+
+		auto& regs = Serialization::Manager::GetSingleton()->FECreset;
+		regs.UnregisterAll(a_form);
+	}
+
+    void VaporizeUnderwear(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor)
 	{
 		if (!a_actor) {
 			a_vm->TraceStack("Actor is None", a_stackID);

@@ -168,27 +168,27 @@ namespace FEC::Serialization
 				if constexpr (std::is_same_v<T, ActorEffect::Permanent>) {
 				    for (auto& [key, mapped] : _map) {
 						if (!a_intfc->WriteRecordData(key)) {
-							logger::error("	Failed to save key ({}: {})!", key, mapped);
+							logger::error("	Failed to save key ({:X}: {})!", key, stl::to_underlying(mapped));
 							return false;
 						}
 						if (!a_intfc->WriteRecordData(stl::to_underlying(mapped))) {
-							logger::error("	Failed to save value ({}: {})!", key, mapped);
+							logger::error("	Failed to save value ({:X}: {})!", key, stl::to_underlying(mapped));
 							return false;
 						}
 					}
 				} else {
 				    for (auto& [key, set] : _map) {
 						if (!a_intfc->WriteRecordData(key)) {
-							logger::error("	Failed to save key ({})!", key);
+							logger::error("	Failed to save key ({:X})!", key);
 							return false;
 						}
 						if (!a_intfc->WriteRecordData(set.size())) {
-							logger::error("	Failed to save value size ({})!", key);
+							logger::error("	Failed to save value size ({:X})!", key);
 							return false;
 						}
 						for (auto& mapped : set) {
 							if (!a_intfc->WriteRecordData(stl::to_underlying(mapped))) {
-								logger::error("	Failed to save reg ({} : {})!", key, mapped);
+								logger::error("	Failed to save reg ({:X} : {})!", key, stl::to_underlying(mapped));
 								return false;
 							}
 						}
@@ -225,7 +225,7 @@ namespace FEC::Serialization
 			}
 		}
 
-		SKSE::RegistrationMap<const RE::Actor*, std::uint32_t, bool> FECreset{ "OnFECReset"sv };
+		SKSE::RegistrationMap<std::uint32_t, const RE::Actor*, std::uint32_t, bool> FECreset{ "OnFECReset"sv };
 
 		void Save(SKSE::SerializationInterface* a_intfc);
 		void Load(SKSE::SerializationInterface* a_intfc);
@@ -236,7 +236,7 @@ namespace FEC::Serialization
 		EventResult ProcessEvent(const RE::TESResetEvent* a_event, RE::BSTEventSource<RE::TESResetEvent>*) override;
 		EventResult ProcessEvent(const RE::TESLoadGameEvent* a_event, RE::BSTEventSource<RE::TESLoadGameEvent>*) override;
 
-		ActorEffectMap<ActorEffect::Permanent> permanentEffectMap;
+	    ActorEffectMap<ActorEffect::Permanent> permanentEffectMap;
 		ActorEffectMap<TempEffectSet> temporaryEffectMap;
 
 	private:

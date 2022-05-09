@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 set(NAME "po3_FEC")
-set(VERSION 5.0.0)
+set(VERSION 5.0.5)
 set(VR_VERSION 1)
 set(AE_VERSION 1)
 
@@ -140,6 +140,8 @@ else ()
 		"Variable ${CommonLibName}Path is not set."
 	)
 endif()
+
+find_path(SRELL_INCLUDE_DIRS "srell.hpp")
 
 find_package(frozen CONFIG REQUIRED)
 

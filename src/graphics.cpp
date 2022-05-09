@@ -13,9 +13,9 @@ namespace FEC::GRAPHICS
 			std::ranges::transform(a_path, a_path.begin(),
 				[](char c) { return static_cast<char>(std::tolower(c)); });
 
-			a_path = std::regex_replace(a_path, std::regex("/+|\\\\+"), "\\");
-			a_path = std::regex_replace(a_path, std::regex("^\\\\+"), "");
-			a_path = std::regex_replace(a_path, std::regex(R"(.*?[^\s]textures\\|^textures\\)", std::regex_constants::icase), "");
+			a_path = srell::regex_replace(a_path, srell::regex("/+|\\\\+"), "\\");
+			a_path = srell::regex_replace(a_path, srell::regex("^\\\\+"), "");
+			a_path = srell::regex_replace(a_path, srell::regex(R"(.*?[^\s]textures\\|^textures\\)", srell::regex_constants::icase), "");
 		}
 
 		RE::BSShaderTextureSet* create_textureset(char** a_value)
@@ -557,7 +557,7 @@ namespace FEC::GRAPHICS
 						if (permType && *permType != PermEffect::kNone) {
 							if (*permType == PermEffect::kCharred || *permType == PermEffect::kSkeletonized) {
 								if (const auto& name = a_object->name; !name.empty() && std::ranges::find(underwear::underwears, name.c_str()) != underwear::underwears.end()) {
-							        SET::Toggle(root, a_object, true);
+									SET::Toggle(root, a_object, true);
 								}
 							}
 							if (a_object->HasShaderType(Feature::kFaceGenRGBTint)) {
@@ -695,7 +695,7 @@ namespace FEC::GRAPHICS
 						const auto user = a_node->GetUserData();
 						const auto actor = user ? user->As<RE::Actor>() : nullptr;
 
-						if (actor && !actor->IsPlayerRef() && actor->HasKeywordString("ActorTypeNPC"sv)) {
+						if (actor && !actor->IsPlayerRef() && actor->HasKeywordString(keyword::NPC)) {
 							const auto root = actor->Get3D(false);
 							if (!root) {
 								return;
