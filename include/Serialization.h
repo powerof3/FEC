@@ -8,7 +8,8 @@ namespace FEC::Serialization
 
 	enum : std::uint32_t
 	{
-		kSerializationVersion = 2,
+		kSerializationVersion = 1,
+		kFECResetVersion = 2,
 
 		kFEC = 'FECK',
 
@@ -82,7 +83,7 @@ namespace FEC::Serialization
 				Locker locker(_lock);
 
 				_map[a_key].clear();
-			    return _map[a_key].insert(a_mapped).second;
+				return _map[a_key].insert(a_mapped).second;
 			}
 
 			bool discard(RE::FormID a_key, ActorEffect::Permanent a_mapped)
@@ -111,7 +112,7 @@ namespace FEC::Serialization
 				_map.clear();
 
 				if constexpr (std::is_same_v<T, ActorEffect::Permanent>) {
-				    RE::FormID formID;
+					RE::FormID formID;
 					std::int32_t effect;
 
 					for (std::size_t i = 0; i < numRegs; i++) {
@@ -126,7 +127,7 @@ namespace FEC::Serialization
 					}
 
 				} else {
-				    RE::FormID formID;
+					RE::FormID formID;
 					std::size_t numEffects;
 					std::int32_t effect;
 
@@ -166,7 +167,7 @@ namespace FEC::Serialization
 				}
 
 				if constexpr (std::is_same_v<T, ActorEffect::Permanent>) {
-				    for (auto& [key, mapped] : _map) {
+					for (auto& [key, mapped] : _map) {
 						if (!a_intfc->WriteRecordData(key)) {
 							logger::error("	Failed to save key ({:X}: {})!", key, stl::to_underlying(mapped));
 							return false;
@@ -177,7 +178,7 @@ namespace FEC::Serialization
 						}
 					}
 				} else {
-				    for (auto& [key, set] : _map) {
+					for (auto& [key, set] : _map) {
 						if (!a_intfc->WriteRecordData(key)) {
 							logger::error("	Failed to save key ({:X})!", key);
 							return false;
@@ -236,7 +237,7 @@ namespace FEC::Serialization
 		EventResult ProcessEvent(const RE::TESResetEvent* a_event, RE::BSTEventSource<RE::TESResetEvent>*) override;
 		EventResult ProcessEvent(const RE::TESLoadGameEvent* a_event, RE::BSTEventSource<RE::TESLoadGameEvent>*) override;
 
-	    ActorEffectMap<ActorEffect::Permanent> permanentEffectMap;
+		ActorEffectMap<ActorEffect::Permanent> permanentEffectMap;
 		ActorEffectMap<TempEffectSet> temporaryEffectMap;
 
 	private:

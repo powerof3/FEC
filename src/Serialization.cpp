@@ -22,7 +22,7 @@ namespace FEC::Serialization
 
 	void Manager::Save(SKSE::SerializationInterface* a_intfc)
 	{
-		FECreset.Save(a_intfc, kFECReset, kSerializationVersion);
+		FECreset.Save(a_intfc, kFECReset, kFECResetVersion);
 
 		permanentEffectMap.save(a_intfc, kFECPerm, kSerializationVersion);
 		temporaryEffectMap.save(a_intfc, kFECTemp, kSerializationVersion);
@@ -35,13 +35,19 @@ namespace FEC::Serialization
 		std::uint32_t version;
 		std::uint32_t length;
 		while (a_intfc->GetNextRecordInfo(type, version, length)) {
-			if (version != kSerializationVersion) {
+			if (version < kSerializationVersion) {
 				logger::critical("Loaded data is out of date! Read ({}), expected ({}) for type code ({})", version, kSerializationVersion, DecodeTypeCode(type));
 				continue;
 			}
 			switch (type) {
 			case kFECReset:
-				FECreset.Load(a_intfc);
+				{
+					if (version != kFECResetVersion) {
+						logger::critical("Loaded data for FEC reset is out of date! Read ({}), expected ({}) for type code ({})", version, kFECResetVersion, DecodeTypeCode(type));
+					} else {
+						FECreset.Load(a_intfc);
+					}
+				}
 				break;
 			case kFECPerm:
 				permanentEffectMap.load(a_intfc);
