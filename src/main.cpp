@@ -19,12 +19,10 @@ public:
 	{
 		const auto papyrusExtenderHandle = GetModuleHandleA(ver::PapyrusExtender.data());
 
-		std::string message{};
-
 		if (papyrusExtenderHandle == nullptr) {
 			logger::error("PapyrusExtender SSE plugin not found | error {}", GetLastError());
 
-			message = "[FEC] Papyrus Extender is not installed! Mod will not work correctly!\n";
+			return "[FEC] Papyrus Extender is not installed! Mod will not work correctly!\n";
 		} else {
 			const auto peGetVersion = reinterpret_cast<PEGETVERSION>(GetProcAddress(papyrusExtenderHandle, "GetPluginVersion"));
 
@@ -33,15 +31,16 @@ public:
 				const auto compare = compare_version(currentPE);
 
 				if (compare == -1) {
-					message = fmt::format("[FEC] Papyrus Extender is out of date! FEC requires {} or higher; current PE version is {}\n", ver::PE, currentPE);
+					return fmt::format("[FEC] Papyrus Extender is out of date! FEC requires {} or higher; current PE version is {}\n", ver::PE, currentPE);
 				}
 			} else {
 				logger::error("Failed version check info from PapyrusExtender | error {} ", GetLastError());
 			}
 		}
 
-		return message;
+		return {};
 	}
+
 private:
 	static std::int32_t
 		compare_version(const std::string& a_value)
@@ -54,20 +53,7 @@ private:
 		sscanf_s(a_value.data(), "%u.%u", &major1, &minor1);
 		sscanf_s(ver::PE.data(), "%u.%u", &major2, &minor2);
 
-		if (major1 < major2) {
-			return -1;
-		}
-		if (major1 > major2) {
-			return 1;
-		}
-		if (minor1 < minor2) {
-			return -1;
-		}
-		if (minor1 > minor2) {
-			return 1;
-		}
-
-		return 0;
+		return major1 < major2 || minor1 < minor2 ? -1 : 0;
 	}
 };
 
@@ -99,11 +85,11 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 				}
 			}
 
-		    if (const auto error = RequirementsCheck::GetError(); !error.empty()) {
+			if (const auto error = RequirementsCheck::GetError(); !error.empty()) {
 				if (consoleLog) {
 					consoleLog->Print(error.c_str());
 				}
-		    }
+			}
 
 			FEC::GRAPHICS::Install();
 
