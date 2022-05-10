@@ -15,100 +15,36 @@ class RequirementsCheck
 public:
 	using PEGETVERSION = const char* (*)();
 
-	static std::vector<std::string> GetError()
+	static std::string GetError()
 	{
-		std::vector<std::string> vec;
-
 		const auto papyrusExtenderHandle = GetModuleHandleA(ver::PapyrusExtender.data());
-		const auto papyrusUtilsHandle = GetModuleHandleA(ver::PapyrusUtil.data());
 
-		std::string message;
-		std::string info;
+		std::string message{};
 
 		if (papyrusExtenderHandle == nullptr) {
 			logger::error("PapyrusExtender SSE plugin not found | error {}", GetLastError());
 
-			info = "Frozen Electrocuted Combustion - Missing Plugin";
-
-			if (papyrusUtilsHandle == nullptr) {
-				message = R"(Papyrus Extender [SKSE plugin] is not loaded! Frozen Electrocuted Combustion [FEC] will not work correctly!
-
-If you have installed, and activated Papyrus Extender in your mod manager, make sure you have all requirements installed, including Microsoft Visual C++ Redistributables 2019.
-
-Otherwise, please download and install it.)";
-			} else {
-				message = R"(Papyrus Extender [SKSE plugin] is not loaded! Frozen Electrocuted Combustion [FEC] will not work correctly!
-
-Please note that Papyrus EXTENDER is NOT Papyrus UTILS, which is a different SKSE plugin.
-
-If you have installed, and activated Papyrus Extender in your mod manager, make sure you have all requirements installed, including Microsoft Visual C++ Redistributables 2019.
-
-Otherwise, please download and install it.)";
-			}
+			message = "[FEC] Papyrus Extender is not installed! Mod will not work correctly!\n";
 		} else {
 			const auto peGetVersion = reinterpret_cast<PEGETVERSION>(GetProcAddress(papyrusExtenderHandle, "GetPluginVersion"));
 
-			if (peGetVersion == nullptr) {
-				logger::error("Failed version check info from PapyrusExtender | error {} ", GetLastError());
-
-				info = "Frozen Electrocuted Combustion - Outdated Plugin";
-
-				message = R"(PapyrusExtender [SKSE plugin] is severely out of date!
-
-Required PapyrusExtender version : )" +
-				          std::string(ver::PE) +
-				          " or higher";
-			} else {
+			if (peGetVersion != nullptr) {
 				const std::string currentPE(peGetVersion());
 				const auto compare = compare_version(currentPE);
 
 				if (compare == -1) {
-					logger::error("PapyrusExtender SSE plugin version too low");
-
-					info = "Frozen Electrocuted Combustion - Outdated Plugin";
-
-					message = R"(PapyrusExtender [SKSE plugin] is out of date!
-
-Frozen Electrocuted Combustion [FEC] requires version )" +
-					          std::string(ver::PE) +
-
-					          R"(
-
-Current PapyrusExtender version : )" +
-					          currentPE;
-
-				} else if (compare == 1) {
-					logger::info("PapyrusExtender SSE plugin version too high");
-
-					info = "Frozen Electrocuted Combustion - Outdated Mod";
-
-					message = R"(PapyrusExtender [SKSE plugin] is newer than expected. You'd probably want to update Frozen Electrocuted Combustion [FEC].
-
-Required PapyrusExtender version : )" +
-					          std::string(ver::PE) +
-
-					          R"(
-
-Current PapyrusExtender version : )" +
-					          currentPE;
+					message = fmt::format("[FEC] Papyrus Extender is out of date! FEC requires {} or higher; current PE version is {}\n", ver::PE, currentPE);
 				}
+			} else {
+				logger::error("Failed version check info from PapyrusExtender | error {} ", GetLastError());
 			}
 		}
 
-		if (!message.empty() && !info.empty()) {
-			message += R"(
-
-
-Click Yes to quit the game, or No to continue playing)";
-			vec.push_back(message);
-			vec.push_back(info);
-		}
-
-		return vec;
+		return message;
 	}
-
 private:
-	static std::int32_t compare_version(const std::string& a_value)
+	static std::int32_t
+		compare_version(const std::string& a_value)
 	{
 		std::uint32_t major1 = 0;
 		std::uint32_t minor1 = 0;
@@ -138,18 +74,10 @@ private:
 void OnInit(SKSE::MessagingInterface::Message* a_msg)
 {
 	switch (a_msg->type) {
-	case SKSE::MessagingInterface::kPostLoad:
-		{
-			if (const auto vec = RequirementsCheck::GetError(); !vec.empty() && vec.size() == 2) {
-				const auto id = WinAPI::MessageBox(nullptr, vec[0].c_str(), vec[1].c_str(), 0x00000004);
-				if (id == 2) {
-					std::_Exit(EXIT_FAILURE);
-				}
-			}
-		}
-		break;
 	case SKSE::MessagingInterface::kDataLoaded:
 		{
+			const auto consoleLog = RE::ConsoleLog::GetSingleton();
+
 			if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
 				mod = const_cast<RE::TESFile*>(dataHandler->LookupModByName("FEC.esp"));
 
@@ -162,9 +90,20 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 
 				if (!deathEffectsAbility || !deathEffectsPCAbility) {
 					logger::error("unable to find death effect abilities");
+
+					if (consoleLog) {
+						consoleLog->Print("[FEC] FEC.esp is not loaded! Disabling FEC helper plugin\n");
+					}
+
 					return;
 				}
 			}
+
+		    if (const auto error = RequirementsCheck::GetError(); !error.empty()) {
+				if (consoleLog) {
+					consoleLog->Print(error.c_str());
+				}
+		    }
 
 			FEC::GRAPHICS::Install();
 
@@ -180,8 +119,6 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 		{
 			if (mod && deathEffectsAbility && deathEffectsPCAbility) {
 				FEC::POST_LOAD_PATCH::Install();
-			} else if (const auto consoleLog = RE::ConsoleLog::GetSingleton()) {
-				consoleLog->Print("[FEC] FEC.esp is not installed!");
 			}
 		}
 		break;
@@ -215,11 +152,11 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
 
 	const auto ver = a_skse->RuntimeVersion();
 	if (ver <
-#ifndef SKYRIMVR
+#	ifndef SKYRIMVR
 		SKSE::RUNTIME_1_5_39
-#else
+#	else
 		SKSE::RUNTIME_VR_1_4_15
-#endif
+#	endif
 	) {
 		logger::critical(FMT_STRING("Unsupported runtime version {}"), ver.string());
 		return false;
