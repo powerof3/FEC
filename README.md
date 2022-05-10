@@ -51,7 +51,7 @@ cmake --build buildae --config Release
 ```
 cmake --preset vs2022-windows-vcpkg-vr # for vs2019 use vs2019-windows-vcpkg-vr
 cmake --build buildvr --config Release
-
+```
 
 ## License
 [MIT](LICENSE)
