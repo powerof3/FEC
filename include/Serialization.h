@@ -8,7 +8,7 @@ namespace FEC::Serialization
 
 	enum : std::uint32_t
 	{
-		kSerializationVersion = 1,
+		kSerializationVersion = 2,
 
 		kFEC = 'FECK',
 
