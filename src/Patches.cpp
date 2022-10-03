@@ -202,14 +202,13 @@ namespace FEC
 	{
 		bool CanDeathEffectsBeAdded(RE::TESNPC* a_npc)
 		{
-			if (a_npc->IsSummonable() || a_npc->HasApplicableKeywordString(keyword::Ghost) || a_npc->IsGhost()) {
+			if (a_npc->HasApplicableKeywordString(keyword::SkipEffect) || a_npc->IsSummonable() || a_npc->HasApplicableKeywordString(keyword::Ghost) || a_npc->IsGhost()) {
 				return false;
 			}
 
 			if (a_npc->HasApplicableKeywordString(keyword::NPC)) {
-				const auto race = a_npc->GetRace();
-			    const std::string raceName = race ? race->GetFormEditorID() : std::string();
-				return !raceName.contains("Child");
+			    const auto race = a_npc->GetRace();
+                return !(race && (race->IsChildRace() || string::icontains(race->GetFormEditorID(), "Child")));
 			}
 
 			if (a_npc->HasApplicableKeywordString(keyword::Creature) || a_npc->HasApplicableKeywordString(keyword::Animal)) {

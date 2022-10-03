@@ -103,6 +103,7 @@ namespace FEC
 		inline constexpr auto Shock{ "MagicDamageShock"sv };
 		inline constexpr auto Paralysis{ "MagicParalysis"sv };
 
+		inline constexpr auto SkipEffect{ "FEC_NoDeathEffects"sv };
 	    inline constexpr auto Ghost{ "ActorTypeGhost"sv };
 		inline constexpr auto NPC{ "ActorTypeNPC"sv };
 		inline constexpr auto Animal{ "ActorTypeAnimal"sv };
