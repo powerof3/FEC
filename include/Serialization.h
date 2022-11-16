@@ -3,7 +3,7 @@
 namespace FEC::Serialization
 {
 	using EventResult = RE::BSEventNotifyControl;
-	using Lock = std::mutex;
+	using Lock = std::shared_mutex;
 	using Locker = std::scoped_lock<Lock>;
 
 	enum : std::uint32_t

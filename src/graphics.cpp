@@ -1,9 +1,6 @@
 #include "Graphics.h"
 #include "Serialization.h"
 
-extern RE::TESFile* mod;
-extern RE::SpellItem* deathEffectsAbility;
-
 namespace FEC::GRAPHICS
 {
 	namespace TEXTURE
@@ -129,11 +126,11 @@ namespace FEC::GRAPHICS
 					if (const auto new_txst = TEXTURE::create_textureset(a_data->value); new_txst) {
 						try {
 							textureSet = new_txst;
-							feature = string::lexical_cast<Feature>(a_data->value[9]);
-							flags = string::lexical_cast<std::uint64_t>(a_data->value[10]);
+							feature = string::to_num<Feature>(a_data->value[9]);
+							flags = string::to_num<std::uint64_t>(a_data->value[10]);
 							emissiveColor = RE::NiColor(
-								string::lexical_cast<std::uint32_t>(a_data->value[11]));
-							emissiveMult = string::lexical_cast<float>(a_data->value[12]);
+								string::to_num<std::uint32_t>(a_data->value[11]));
+							emissiveMult = string::to_num<float>(a_data->value[12]);
 						} catch (...) {
 							result = false;
 						}
@@ -256,7 +253,7 @@ namespace FEC::GRAPHICS
 
 			if (const auto processLists = RE::ProcessLists::GetSingleton(); processLists) {
 				const auto handle = a_ref->CreateRefHandle();
-				processLists->GetShaderEffects([&](RE::ShaderReferenceEffect& a_shaderEffect) {
+				processLists->ForEachShaderEffect([&](RE::ShaderReferenceEffect& a_shaderEffect) {
 					if (a_shaderEffect.target == handle) {
 						if (const auto effectData = a_shaderEffect.effectData; effectData &&
 																			   effectData->data.flags.all(Flags::kSkinOnly) &&
@@ -264,7 +261,7 @@ namespace FEC::GRAPHICS
 							a_shaderEffect.finished = true;
 						}
 					}
-					return true;
+					return RE::BSContainer::ForEachResult::kContinue;
 				});
 			}
 		}
@@ -386,8 +383,7 @@ namespace FEC::GRAPHICS
 
 					if (const auto& biped = a_actor->GetCurrentBiped(); biped) {
 						for (auto& slot : slot::headSlots) {
-							const auto node = biped->objects[slot].partClone;
-							if (node && node->HasShaderType(RE::BSShaderMaterial::Feature::kHairTint)) {
+                            if (const auto node = biped->objects[slot].partClone; node && node->HasShaderType(RE::BSShaderMaterial::Feature::kHairTint)) {
 								node->UpdateHairColor(colorForm->color);
 							}
 						}
@@ -444,7 +440,7 @@ namespace FEC::GRAPHICS
 					RE::FormID formID = 0;
 					if (std::string armorID{ data->value[data->size - 1] }; !armorID.empty()) {
 						try {
-							formID = string::lexical_cast<RE::FormID>(armorID, true);
+							formID = string::to_num<RE::FormID>(armorID, true);
 						} catch (...) {
 							continue;
 						}
@@ -481,7 +477,7 @@ namespace FEC::GRAPHICS
 					auto slot = Slot::kNone;
 					if (std::string slotMaskstr{ data->value[data->size - 1] }; !slotMaskstr.empty()) {
 						try {
-							slot = string::lexical_cast<Slot>(slotMaskstr);
+							slot = string::to_num<Slot>(slotMaskstr);
 						} catch (...) {
 							continue;
 						}
@@ -580,7 +576,7 @@ namespace FEC::GRAPHICS
 					return std::nullopt;
 				}
 
-				std::optional<std::uint32_t> result = std::nullopt;
+				std::optional<std::uint32_t> result{ std::nullopt };
 
 				std::span<RE::NiExtraData*> span(a_object->extra, a_object->extraDataSize);
 				for (const auto& extraData : span) {

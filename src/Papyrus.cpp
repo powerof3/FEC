@@ -7,8 +7,10 @@ namespace FEC::Papyrus
 {
 	using ActorEffect = Serialization::ActorEffect;
 
-	using deathEffectPair = std::pair<std::uint32_t, RE::EffectSetting*>;                               // [type, mgef]
-	using deathEffectMap = std::map<std::uint32_t, std::vector<std::pair<RE::EffectSetting*, float>>>;  // [type, [mgef, mag]]
+	using type = std::uint32_t;
+
+	using deathEffectPair = std::pair<type, RE::EffectSetting*>;                               // [type, mgef]
+	using deathEffectMap = std::map<type, std::vector<std::pair<RE::EffectSetting*, float>>>;  // [type, [mgef, mag]]
 
 	struct detail
 	{
@@ -48,6 +50,32 @@ namespace FEC::Papyrus
 				}
 			}
 			return false;
+		}
+
+		static std::uint32_t get_projectile_type(const RE::BGSProjectile* a_projectile)
+		{
+			if (a_projectile->IsMissile()) {
+				return 1;
+			}
+			if (a_projectile->IsGrenade()) {
+				return 2;
+			}
+			if (a_projectile->IsBeam()) {
+				return 3;
+			}
+			if (a_projectile->IsFlamethrower()) {
+				return 4;
+			}
+			if (a_projectile->IsCone()) {
+				return 5;
+			}
+			if (a_projectile->IsBarrier()) {
+				return 6;
+			}
+			if (a_projectile->IsArrow()) {
+				return 7;
+			}
+			return 0;
 		}
 	};
 
@@ -192,7 +220,7 @@ namespace FEC::Papyrus
 				vec[0] = value;
 				vec[1] = mgef->GetMinimumSkillLevel();
 				if (const auto projectile = mgef->data.projectileBase; projectile) {
-					vec[2] = projectile->GetType();
+					vec[2] = detail::get_projectile_type(projectile);
 				}
 			}
 		}
@@ -411,7 +439,7 @@ namespace FEC::Papyrus
 		regs.Unregister(a_activeEffect, a_type);
 	}
 
-    void UnregisterForFECReset_Form(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::TESForm* a_form, std::uint32_t a_type)
+	void UnregisterForFECReset_Form(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::TESForm* a_form, std::uint32_t a_type)
 	{
 		if (!a_form) {
 			a_vm->TraceStack("Form is None", a_stackID);
@@ -422,7 +450,7 @@ namespace FEC::Papyrus
 		regs.Unregister(a_form, a_type);
 	}
 
-    void UnregisterForAllFECResets(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::ActiveEffect* a_activeEffect)
+	void UnregisterForAllFECResets(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::ActiveEffect* a_activeEffect)
 	{
 		if (!a_activeEffect) {
 			a_vm->TraceStack("Active Effect is None", a_stackID);
@@ -433,7 +461,7 @@ namespace FEC::Papyrus
 		regs.UnregisterAll(a_activeEffect);
 	}
 
-    void UnregisterForAllFECResets_Form(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::TESForm* a_form)
+	void UnregisterForAllFECResets_Form(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, const RE::TESForm* a_form)
 	{
 		if (!a_form) {
 			a_vm->TraceStack("Form is None", a_stackID);
@@ -444,7 +472,7 @@ namespace FEC::Papyrus
 		regs.UnregisterAll(a_form);
 	}
 
-    void VaporizeUnderwear(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor)
+	void VaporizeUnderwear(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor)
 	{
 		if (!a_actor) {
 			a_vm->TraceStack("Actor is None", a_stackID);
@@ -457,12 +485,13 @@ namespace FEC::Papyrus
 			return;
 		}
 
-		SKSE::GetTaskInterface()->AddTask([a_actor, root]() {
-			for (auto& underwear : underwear::underwears) {
-				if (const auto object = root->GetObjectByName(underwear)) {
-					GRAPHICS::SET::Toggle(root, object, true);
+		SKSE::GetTaskInterface()->AddTask([root]() {
+			RE::BSVisit::TraverseScenegraphGeometries(root, [&](RE::BSGeometry* a_geometry) -> RE::BSVisit::BSVisitControl {
+				if (std::ranges::find(underwear::underwears, a_geometry->name.c_str()) != underwear::underwears.end()) {
+					GRAPHICS::SET::Toggle(root, a_geometry, true);
 				}
-			}
+			    return RE::BSVisit::BSVisitControl::kContinue;
+			});
 		});
 	}
 

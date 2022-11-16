@@ -13,6 +13,10 @@ namespace FEC
 	using StackID = RE::VMStackID;
 	using Severity = RE::BSScript::ErrorLogger::Severity;
 
+	inline RE::TESFile* mod;
+	inline RE::SpellItem* deathEffectsPCAbility;
+	inline RE::SpellItem* deathEffectsAbility;
+
 	namespace color
 	{
 		inline constexpr RE::Color falmer{ 0x8F7F75 };
@@ -104,7 +108,7 @@ namespace FEC
 		inline constexpr auto Paralysis{ "MagicParalysis"sv };
 
 		inline constexpr auto SkipEffect{ "FEC_NoDeathEffects"sv };
-	    inline constexpr auto Ghost{ "ActorTypeGhost"sv };
+		inline constexpr auto Ghost{ "ActorTypeGhost"sv };
 		inline constexpr auto NPC{ "ActorTypeNPC"sv };
 		inline constexpr auto Animal{ "ActorTypeAnimal"sv };
 		inline constexpr auto Creature{ "ActorTypeCreature"sv };
@@ -173,7 +177,7 @@ namespace FEC
 		inline constexpr auto panty1{ "PantyBowTies1"sv };
 		inline constexpr auto panty2{ "PantyBowTies2"sv };
 
-		inline constexpr std::array<std::string_view, 13> underwears{
+		inline constexpr std::array underwears{
 			male0,
 			male1,
 			female,
@@ -188,13 +192,4 @@ namespace FEC
 			panty2
 		};
 	}
-}
-
-namespace ver
-{
-	inline constexpr auto PapyrusExtender{ "po3_PapyrusExtender"sv };
-	inline constexpr auto PapyrusUtil{ "PapyrusUtil"sv };
-	inline constexpr auto po3Tweaks{ "po3_Tweaks"sv };
-
-	inline constexpr auto PE{ "5.1.0"sv };
 }

@@ -1,61 +1,11 @@
+#include "Dependencies.h"
 #include "Graphics.h"
 #include "Papyrus.h"
 #include "Patches.h"
 #include "Serialization.h"
 
 //GLOBAL VARS
-RE::SpellItem* deathEffectsAbility;
-RE::SpellItem* deathEffectsPCAbility;
-
-RE::TESFile* mod;
-
-// ERROR HANDLING
-class RequirementsCheck
-{
-public:
-	using PEGETVERSION = const char* (*)();
-
-	static std::string GetError()
-	{
-		const auto papyrusExtenderHandle = GetModuleHandleA(ver::PapyrusExtender.data());
-
-		if (papyrusExtenderHandle == nullptr) {
-			logger::error("PapyrusExtender SSE plugin not found | error {}", GetLastError());
-
-			return "[FEC] Papyrus Extender is not installed! Mod will not work correctly!\n";
-		} else {
-			const auto peGetVersion = reinterpret_cast<PEGETVERSION>(GetProcAddress(papyrusExtenderHandle, "GetPluginVersion"));
-
-			if (peGetVersion != nullptr) {
-				const std::string currentPE(peGetVersion());
-				const auto compare = compare_version(currentPE);
-
-				if (compare == -1) {
-					return fmt::format("[FEC] Papyrus Extender is out of date! FEC requires {} or higher; current PE version is {}\n", ver::PE, currentPE);
-				}
-			} else {
-				logger::error("Failed version check info from PapyrusExtender | error {} ", GetLastError());
-			}
-		}
-
-		return {};
-	}
-
-private:
-	static std::int32_t
-		compare_version(const std::string& a_value)
-	{
-		std::uint32_t major1 = 0;
-		std::uint32_t minor1 = 0;
-		std::uint32_t major2 = 0;
-		std::uint32_t minor2 = 0;
-
-		sscanf_s(a_value.data(), "%u.%u", &major1, &minor1);
-		sscanf_s(ver::PE.data(), "%u.%u", &major2, &minor2);
-
-		return major1 < major2 || minor1 < minor2 ? -1 : 0;
-	}
-};
+RE::SpellItem* deathEffectsPCAbility{};
 
 void OnInit(SKSE::MessagingInterface::Message* a_msg)
 {
@@ -65,16 +15,16 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 			const auto consoleLog = RE::ConsoleLog::GetSingleton();
 
 			if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-				mod = const_cast<RE::TESFile*>(dataHandler->LookupModByName("FEC.esp"));
+				FEC::mod = const_cast<RE::TESFile*>(dataHandler->LookupModByName("FEC.esp"));
 
-				if (!mod) {
+				if (!FEC::mod) {
 					logger::error("unable to find FEC.esp");
 				}
 
-				deathEffectsAbility = dataHandler->LookupForm<RE::SpellItem>(0x8E7, "FEC.esp");
+				FEC::deathEffectsAbility = dataHandler->LookupForm<RE::SpellItem>(0x8E7, "FEC.esp");
 				deathEffectsPCAbility = dataHandler->LookupForm<RE::SpellItem>(0x8E4, "FEC.esp");
 
-				if (!deathEffectsAbility || !deathEffectsPCAbility) {
+				if (!FEC::deathEffectsAbility || !deathEffectsPCAbility) {
 					logger::error("unable to find death effect abilities");
 
 					if (consoleLog) {
@@ -85,25 +35,23 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 				}
 			}
 
-			if (const auto error = RequirementsCheck::GetError(); !error.empty()) {
+			if (const auto error = Dependencies::CheckErrors(); !error.empty()) {
 				if (consoleLog) {
 					consoleLog->Print(error.c_str());
 				}
 			}
 
 			FEC::GRAPHICS::Install();
-
 			FEC::PATCH::Install();
-
 			FEC::DISTRIBUTE::Install();
 
-			FEC::Serialization::Manager::Register();
+	        FEC::Serialization::Manager::Register();
 		}
 		break;
 	case SKSE::MessagingInterface::kPostLoadGame:
 	case SKSE::MessagingInterface::kNewGame:
 		{
-			if (mod && deathEffectsAbility && deathEffectsPCAbility) {
+			if (FEC::mod && FEC::deathEffectsAbility && deathEffectsPCAbility) {
 				FEC::POST_LOAD_PATCH::Install();
 			}
 		}

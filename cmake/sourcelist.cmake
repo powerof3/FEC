@@ -1,4 +1,5 @@
 set(sources ${sources}
+	src/Dependencies.cpp
 	src/Graphics.cpp
 	src/PCH.cpp
 	src/Papyrus.cpp

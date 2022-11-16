@@ -6,22 +6,24 @@
 #define NOMINMAX
 #define NOSERVICE
 
+#include <shared_mutex>
+
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
 
-#pragma warning(push)
+#include <ClibUtil/numeric.hpp>
+#include <ClibUtil/string.hpp>
 #include <frozen/map.h>
 #include <robin_hood.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <srell.hpp>
 #include <xbyak/xbyak.h>
-#pragma warning(pop)
 
 #define DLLEXPORT __declspec(dllexport)
 
 namespace logger = SKSE::log;
-namespace numeric = SKSE::stl::numeric;
-namespace string = SKSE::stl::string;
+namespace numeric = clib_util::numeric;
+namespace string = clib_util::string;
 namespace WinAPI = SKSE::WinAPI;
 
 using namespace std::literals;
@@ -58,5 +60,5 @@ namespace stl
 
 #define BIND(a_method, ...) a_vm->RegisterFunction(#a_method##sv, obj, a_method __VA_OPT__(, ) __VA_ARGS__)
 
-#include "Version.h"
 #include "Globals.h"
+#include "Version.h"
