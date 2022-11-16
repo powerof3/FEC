@@ -490,7 +490,7 @@ namespace FEC::Papyrus
 				if (std::ranges::find(underwear::underwears, a_geometry->name.c_str()) != underwear::underwears.end()) {
 					GRAPHICS::SET::Toggle(root, a_geometry, true);
 				}
-			    return RE::BSVisit::BSVisitControl::kContinue;
+				return RE::BSVisit::BSVisitControl::kContinue;
 			});
 		});
 	}

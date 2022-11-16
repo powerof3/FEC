@@ -45,7 +45,7 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 			FEC::PATCH::Install();
 			FEC::DISTRIBUTE::Install();
 
-	        FEC::Serialization::Manager::Register();
+			FEC::Serialization::Manager::Register();
 		}
 		break;
 	case SKSE::MessagingInterface::kPostLoadGame:

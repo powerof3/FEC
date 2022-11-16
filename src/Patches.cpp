@@ -202,8 +202,8 @@ namespace FEC
 			}
 
 			if (a_npc->HasApplicableKeywordString(keyword::NPC)) {
-			    const auto race = a_npc->GetRace();
-                return !(race && (race->IsChildRace() || string::icontains(race->GetFormEditorID(), "Child")));
+				const auto race = a_npc->GetRace();
+				return !(race && (race->IsChildRace() || string::icontains(race->GetFormEditorID(), "Child")));
 			}
 
 			if (a_npc->HasApplicableKeywordString(keyword::Creature) || a_npc->HasApplicableKeywordString(keyword::Animal)) {

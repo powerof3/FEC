@@ -65,7 +65,7 @@ namespace FEC::GRAPHICS
 				if (a_setData) {
 					if (const auto data = a_root->GetExtraData<RE::NiStringsExtraData>(extra::TOGGLE); data) {
 						a_toggle ?
-							data->Insert(a_nodeName) :
+                            data->Insert(a_nodeName) :
                             data->Remove(a_nodeName);
 					} else if (a_toggle) {
 						const std::vector<RE::BSFixedString> vec{ a_nodeName };
@@ -84,7 +84,7 @@ namespace FEC::GRAPHICS
 			if (a_setData) {
 				if (const auto data = a_root->GetExtraData<RE::NiStringsExtraData>(extra::TOGGLE); data) {
 					a_toggle ?
-						data->Insert(a_node->name) :
+                        data->Insert(a_node->name) :
                         data->Remove(a_node->name);
 				} else if (a_toggle) {
 					const std::vector<RE::BSFixedString> vec{ a_node->name };
@@ -383,7 +383,7 @@ namespace FEC::GRAPHICS
 
 					if (const auto& biped = a_actor->GetCurrentBiped(); biped) {
 						for (auto& slot : slot::headSlots) {
-                            if (const auto node = biped->objects[slot].partClone; node && node->HasShaderType(RE::BSShaderMaterial::Feature::kHairTint)) {
+							if (const auto node = biped->objects[slot].partClone; node && node->HasShaderType(RE::BSShaderMaterial::Feature::kHairTint)) {
 								node->UpdateHairColor(colorForm->color);
 							}
 						}

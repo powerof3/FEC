@@ -16,6 +16,6 @@ namespace FEC
 	{
 		bool CanDeathEffectsBeAdded(RE::TESNPC* a_npc);
 
-	    void Install();
+		void Install();
 	}
 }
