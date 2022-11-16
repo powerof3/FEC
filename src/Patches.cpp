@@ -1,10 +1,5 @@
 #include "Patches.h"
 
-extern RE::SpellItem* deathEffectsAbility;
-extern RE::SpellItem* deathEffectsPCAbility;
-
-extern RE::TESFile* mod;
-
 namespace FEC
 {
 	namespace PATCH
@@ -202,7 +197,7 @@ namespace FEC
 	{
 		bool CanDeathEffectsBeAdded(RE::TESNPC* a_npc)
 		{
-			if (a_npc->HasApplicableKeywordString(keyword::SkipEffect) || a_npc->IsSummonable() || a_npc->HasApplicableKeywordString(keyword::Ghost) || a_npc->IsGhost()) {
+			if (a_npc->IsSummonable() || a_npc->HasApplicableKeywordString(keyword::Ghost) || a_npc->IsGhost()) {
 				return false;
 			}
 
