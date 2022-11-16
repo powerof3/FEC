@@ -1,0 +1,1320 @@
+{
+  "modName": "FEC",
+  "displayName": "FEC",
+  "minMcmVersion": 9,
+  "pluginRequirements": [ "FEC.esp" ],
+  "cursorFillMode": "topToBottom",
+  "customContent": {
+    "source": "po3_FEC/triquetraicon.dds",
+    "x": 153,
+    "y": 0
+  },
+  "pages": [
+    {
+      "pageDisplayName": "$FEC_Settings_Page",
+      "cursorFillMode": "topToBottom",
+      "content": [
+        {
+          "id": "iRandomChanceGlobal:Settings",
+          "type": "slider",
+          "text": "$FEC_RandomChanceGlobal_Text",
+          "help": "$FEC_RandomChanceGlobal_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "formatString": "{0}% ",
+            "defaultValue": 100
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "id": "bAllowDeathCam:Settings",
+          "type": "toggle",
+          "text": "$FEC_AllowDeathCam_Text",
+          "help": "$FEC_AllowDeathCam_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          },
+          "groupControl": 1
+        },
+        {
+          "id": "iDeathCamDur:Settings",
+          "type": "slider",
+          "text": "$FEC_DeathCamDur_Text",
+          "help": "$FEC_DeathCamDur_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 360,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 8,
+            "formatString": "{0} seconds"
+          },
+          "groupCondition": 1
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "id": "bAllowAfterDeathNPC:Settings",
+          "type": "toggle",
+          "text": "$FEC_AllowAfterDeathNPC_Text",
+          "help": "$FEC_AllowAfterDeathNPC_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        },
+        {
+          "id": "bAllowAfterDeathCR:Settings",
+          "type": "toggle",
+          "text": "$FEC_AllowAfterDeathCR_Text",
+          "help": "$FEC_AllowAfterDeathCR_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "id": "bAllowHitBoxScaling:Settings",
+          "type": "toggle",
+          "text": "$FEC_AllowHitBoxScaling_Text",
+          "help": "$FEC_AllowHitBoxScaling_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        },
+        {
+          "id": "sLoadSettings:Settings",
+          "type": "text",
+          "text": "$FEC_LoadSettings_Text",
+          "help": "$FEC_LoadSettings_Help",
+          "valueOptions": {
+            "value": "",
+            "sourceType": "ModSettingString"
+          },
+          "action": {
+            "type": "CallFunction",
+            "function": "LoadSettings"
+          },
+          "position": 1
+        },
+        {
+          "id": "sSaveSettings:Settings",
+          "type": "text",
+          "text": "$FEC_SaveSettings_Text",
+          "help": "$FEC_SaveSettings_Help",
+          "valueOptions": {
+            "value": "",
+            "sourceType": "ModSettingString"
+          },
+          "action": {
+            "type": "CallFunction",
+            "function": "SaveSettings"
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "id": "sLoadDefaultSettings:Settings",
+          "type": "text",
+          "text": "$FEC_LoadDefaultSettings_Text",
+          "help": "$FEC_LoadDefaultSettings_Help",
+          "valueOptions": {
+            "value": "",
+            "sourceType": "ModSettingString"
+          },
+          "action": {
+            "type": "CallFunction",
+            "function": "ResetSettings"
+          }
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "$FEC_Fire_Page",
+      "cursorFillMode": "topToBottom",
+      "content": [
+        {
+          "id": "bAffectPlayer:Fire",
+          "type": "toggle",
+          "text": "$FEC_AffectPlayer_Text",
+          "help": "Enable death fire effects for player",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        },
+        {
+          "id": "iRandomChanceNPC:Fire",
+          "type": "slider",
+          "text": "$FEC_RandomChanceNPC_Text",
+          "help": "$FEC_RandomChance_Fire_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0}% "
+          }
+        },
+        {
+          "id": "iRandomChanceCR:Fire",
+          "type": "slider",
+          "text": "$FEC_RandomChanceCR_Text",
+          "help": "$FEC_RandomChance_Fire_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0}% "
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "type": "header",
+          "text": "$FEC_EffectsNPC_Header"
+        },
+        {
+          "id": "bRandom:FireEffects",
+          "type": "toggle",
+          "text": "$FEC_Random_Text",
+          "help": "$FEC_Random_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 2,
+          "groupCondition": {
+            "NOT": [
+              3,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "id": "bAutomatic:FireEffects",
+          "type": "toggle",
+          "text": "$FEC_Automatic_Text",
+          "help": "Effects are applied based on spell level. Master - vaporization, Expert - skeletonization, Adept and below - charred corpse",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          },
+          "groupControl": 3,
+          "groupCondition": {
+            "NOT": [
+              2,
+              4,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "id": "bChar:FireEffects",
+          "type": "toggle",
+          "text": "$FEC_Char_Text",
+          "help": "$FEC_Char_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 4,
+          "groupCondition": {
+            "NOT": [
+              2,
+              3,
+              5,
+              6
+            ]
+          }
+        },
+        {
+          "id": "bSkeletonize:FireEffects",
+          "type": "toggle",
+          "text": "$FEC_Skeletonize_Text",
+          "help": "$FEC_Skeletonize_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 5,
+          "groupCondition": {
+            "NOT": [
+              2,
+              4,
+              3,
+              6
+            ]
+          }
+        },
+        {
+          "id": "bVaporize:FireEffects",
+          "type": "toggle",
+          "text": "$FEC_Vaporize_Text",
+          "help": "$FEC_Vaporize_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 6,
+          "groupCondition": {
+            "NOT": [
+              2,
+              4,
+              5,
+              3
+            ]
+          }
+        },
+        {
+          "type": "header",
+          "text": "$FEC_EffectsCR_Header",
+          "position": 1
+        },
+        {
+          "id": "bRandomCR:FireEffects",
+          "type": "toggle",
+          "text": "$FEC_Random_Text",
+          "help": "$FEC_Random_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 7,
+          "groupCondition": {
+            "NOT": [
+              8,
+              9,
+              10
+            ]
+          }
+        },
+        {
+          "id": "bAutomaticCR:FireEffects",
+          "type": "toggle",
+          "text": "$FEC_Automatic_Text",
+          "help": "$FEC_Automatic_FireEffectsCR_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          },
+          "groupControl": 8,
+          "groupCondition": {
+            "NOT": [
+              7,
+              9,
+              10
+            ]
+          }
+        },
+        {
+          "id": "bCharCR:FireEffects",
+          "type": "toggle",
+          "text": "$FEC_Char_Text",
+          "help": "$FEC_Char_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 9,
+          "groupCondition": {
+            "NOT": [
+              7,
+              8,
+              10
+            ]
+          }
+        },
+        {
+          "id": "bVaporizeCR:FireEffects",
+          "type": "toggle",
+          "text": "$FEC_Vaporize_Text",
+          "help": "$FEC_Vaporize_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 10,
+          "groupCondition": {
+            "NOT": [
+              7,
+              8,
+              9
+            ]
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "type": "header",
+          "text": "$FEC_Visuals_Header"
+        },
+        {
+          "id": "iFireParticleCount:FireVisuals",
+          "type": "slider",
+          "text": "$FEC_ParticleCount_Fire_Text",
+          "help": "$FEC_ParticleCount_Fire_Help",
+          "valueOptions": {
+            "min": 25,
+            "max": 500,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0} particles "
+          }
+        },
+        {
+          "id": "bAllowVampCombust:FireVisuals",
+          "type": "toggle",
+          "text": "$FEC_AllowVampCombust_Text",
+          "help": "$FEC_AllowVampCombust_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "type": "header",
+          "text": "$FEC_Immersion_Header"
+        },
+        {
+          "id": "bAllowCookFood:FireImmersion",
+          "type": "toggle",
+          "text": "$FEC_CookMeat_Text",
+          "help": "$FEC_CookMeat_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        },
+        {
+          "id": "bAllowFireDamage:FireImmersion",
+          "type": "toggle",
+          "text": "$FEC_FireDamage_Text",
+          "help": "$FEC_FireDamage_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        },
+        {
+          "id": "bAllowBurnClothing:FireImmersion",
+          "type": "toggle",
+          "text": "$FEC_AllowBurnClothing_Text",
+          "help": "$FEC_AllowBurnClothing_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          },
+          "groupControl": 11,
+          "groupCondition": {
+            "NOT": [
+              12
+            ]
+          }
+        },
+        {
+          "id": "bAllowRemoveClothing:FireImmersion",
+          "type": "toggle",
+          "text": "$FEC_AllowRemoveClothing_Text",
+          "help": "$FEC_AllowRemoveClothing_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 12,
+          "groupCondition": {
+            "NOT": [
+              11
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "$FEC_Frost_Page",
+      "cursorFillMode": "topToBottom",
+      "content": [
+        {
+          "id": "bAffectPlayer:Frost",
+          "type": "toggle",
+          "text": "$FEC_AffectPlayer_Text",
+          "help": "$FEC_AffectPlayer_Frost_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        },
+        {
+          "id": "iRandomChanceNPC:Frost",
+          "type": "slider",
+          "text": "$FEC_RandomChanceNPC_Text",
+          "help": "$FEC_RandomChance_Frost_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0}% "
+          }
+        },
+        {
+          "id": "iRandomChanceCR:Frost",
+          "type": "slider",
+          "text": "$FEC_RandomChanceCR_Text",
+          "help": "$FEC_RandomChance_Frost_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0}% "
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "type": "header",
+          "text": "$FEC_EffectsNPC_Header"
+        },
+        {
+          "id": "bRandom:FrostEffects",
+          "type": "toggle",
+          "text": "$FEC_Random_Text",
+          "help": "$FEC_Random_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 13,
+          "groupCondition": {
+            "NOT": [
+              14,
+              15,
+              16,
+              17
+            ]
+          }
+        },
+        {
+          "id": "bAutomatic:FrostEffects",
+          "type": "toggle",
+          "text": "$FEC_Automatic_Text",
+          "help": "$FEC_Automatic_FrostEffectsNPC_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          },
+          "groupControl": 14,
+          "groupCondition": {
+            "NOT": [
+              13,
+              15,
+              16,
+              17
+            ]
+          }
+        },
+        {
+          "id": "bFreeze:FrostEffects",
+          "type": "toggle",
+          "text": "$FEC_Freeze_Text",
+          "help": "$FEC_Freeze_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 15,
+          "groupCondition": {
+            "NOT": [
+              13,
+              14,
+              16,
+              17
+            ]
+          }
+        },
+        {
+          "id": "bShatter:FrostEffects",
+          "type": "toggle",
+          "text": "$FEC_Shatter_Text",
+          "help": "$FEC_Shatter_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 16,
+          "groupCondition": {
+            "NOT": [
+              13,
+              14,
+              15,
+              17
+            ]
+          }
+        },
+        {
+          "id": "bIceBlock:FrostEffects",
+          "type": "toggle",
+          "text": "$FEC_IceBlock_Text",
+          "help": "$FEC_IceBlock_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 17,
+          "groupCondition": {
+            "NOT": [
+              13,
+              14,
+              15,
+              16
+            ]
+          }
+        },
+        {
+          "type": "header",
+          "text": "$FEC_EffectsCR_Header",
+          "position": 1
+        },
+        {
+          "id": "bAutomaticCR:FrostEffects",
+          "type": "toggle",
+          "text": "$FEC_Automatic_Text",
+          "help": "$FEC_Automatic_FrostEffectsCR_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          },
+          "groupControl": 18,
+          "groupCondition": {
+            "NOT": [
+              19,
+              20
+            ]
+          }
+        },
+        {
+          "id": "bFreezeCR:FrostEffects",
+          "type": "toggle",
+          "text": "$FEC_Freeze_Text",
+          "help": "$FEC_Freeze_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 19,
+          "groupCondition": {
+            "NOT": [
+              18,
+              20
+            ]
+          }
+        },
+        {
+          "id": "bIceBlockCR:FrostEffects",
+          "type": "toggle",
+          "text": "$FEC_IceBlock_Text",
+          "help": "$FEC_IceBlock_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 20,
+          "groupCondition": {
+            "NOT": [
+              18,
+              19
+            ]
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "type": "header",
+          "text": "$FEC_Visuals_Header"
+        },
+        {
+          "id": "bAllowFrozenShatter:FrostVisuals",
+          "type": "toggle",
+          "text": "$FEC_ShatterWhenFrozen_Text",
+          "help": "$FEC_ShatterWhenFrozen_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        },
+        {
+          "id": "bApplyIceShader:FrostVisuals",
+          "type": "toggle",
+          "text": "$FEC_ApplyIceShader_Text",
+          "help": "$FEC_ApplyIceShader_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "$FEC_Shock_Page",
+      "cursorFillMode": "topToBottom",
+      "content": [
+        {
+          "id": "bAffectPlayer:Shock",
+          "type": "toggle",
+          "text": "$FEC_AffectPlayer_Text",
+          "help": "$FEC_AffectPlayer_Shock_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        },
+        {
+          "id": "iRandomChanceNPC:Shock",
+          "type": "slider",
+          "text": "$FEC_RandomChanceNPC_Text",
+          "help": "$FEC_RandomChance_Shock_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0}% "
+          }
+        },
+        {
+          "id": "iRandomChanceCR:Shock",
+          "type": "slider",
+          "text": "$FEC_RandomChanceCR_Text",
+          "help": "$FEC_RandomChance_Shock_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0}% "
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "type": "header",
+          "text": "$FEC_Effects_Header"
+        },
+        {
+          "id": "bRandom:ShockEffects",
+          "type": "toggle",
+          "text": "$FEC_Random_Text",
+          "help": "$FEC_Random_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 21,
+          "groupCondition": {
+            "NOT": [
+              22,
+              23,
+              24,
+              25
+            ]
+          }
+        },
+        {
+          "id": "bAutomatic:ShockEffects",
+          "type": "toggle",
+          "text": "$FEC_Automatic_Text",
+          "help": "$FEC_Automatic_ShockEffects_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          },
+          "groupControl": 22,
+          "groupCondition": {
+            "NOT": [
+              21,
+              23,
+              24,
+              25
+            ]
+          }
+        },
+        {
+          "id": "bSinge:ShockEffects",
+          "type": "toggle",
+          "text": "$FEC_Singe_Text",
+          "help": "$FEC_Singe_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 23,
+          "groupCondition": {
+            "NOT": [
+              21,
+              22,
+              24,
+              25
+            ]
+          }
+        },
+        {
+          "id": "bXRay:ShockEffects",
+          "type": "toggle",
+          "text": "$FEC_XRay_Text",
+          "help": "$FEC_XRay_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 24,
+          "groupCondition": {
+            "NOT": [
+              21,
+              22,
+              23,
+              25
+            ]
+          }
+        },
+        {
+          "id": "bExplosive:ShockEffects",
+          "type": "toggle",
+          "text": "$FEC_ExplosiveElectrocution_Text",
+          "help": "$FEC_ExplosiveElectrocution_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 25,
+          "groupCondition": {
+            "NOT": [
+              21,
+              22,
+              23,
+              24
+            ]
+          }
+        },
+        {
+          "type": "header",
+          "text": "$FEC_Immersion_Header",
+          "position": 1
+        },
+        {
+          "id": "bAllowShockDamage:ShockImmersion",
+          "type": "toggle",
+          "text": "$FEC_ShockDamage_Text",
+          "help": "$FEC_ShockDamage_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        },
+        {
+          "id": "bAllowWeaponDrop:ShockImmersion",
+          "type": "toggle",
+          "text": "$FEC_AllowWeaponDrop_Text",
+          "help": "$FEC_AllowWeaponDrop_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          }
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "$FEC_Drain_Page",
+      "cursorFillMode": "topToBottom",
+      "content": [
+        {
+          "id": "bAffectPlayer:Drain",
+          "type": "toggle",
+          "text": "$FEC_AffectPlayer_Text",
+          "help": "$FEC_AffectPlayer_Drain_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        },
+        {
+          "id": "iRandomChance:Drain",
+          "type": "slider",
+          "text": "$FEC_RandomChance_Text",
+          "help": "$FEC_RandomChance_Drain_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0}% "
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "type": "header",
+          "text": "$FEC_Effects_Header"
+        },
+        {
+          "id": "bRandom:DrainEffects",
+          "type": "toggle",
+          "text": "$FEC_Random_Text",
+          "help": "$FEC_Random_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          },
+          "groupControl": 26,
+          "groupCondition": {
+            "NOT": [
+              27,
+              28,
+              29
+            ]
+          }
+        },
+        {
+          "id": "bAutomatic:DrainEffects",
+          "type": "toggle",
+          "text": "$FEC_Automatic_Text",
+          "help": "$FEC_Automatic_DrainEffects_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 27,
+          "groupCondition": {
+            "NOT": [
+              26,
+              28,
+              29
+            ]
+          }
+        },
+        {
+          "id": "bAge:DrainEffects",
+          "type": "toggle",
+          "text": "$FEC_Age_DrainEffects_Text",
+          "help": "$FEC_Age_DrainEffects_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 28,
+          "groupCondition": {
+            "NOT": [
+              26,
+              27,
+              29
+            ]
+          }
+        },
+        {
+          "id": "bDessicate:DrainEffects",
+          "type": "toggle",
+          "text": "$FEC_Dessicate_DrainEffects_Text",
+          "help": "$FEC_Dessicate_DrainEffects_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          },
+          "groupControl": 29,
+          "groupCondition": {
+            "NOT": [
+              26,
+              27,
+              28
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "$FEC_Poison_Page",
+      "cursorFillMode": "topToBottom",
+      "content": [
+        {
+          "id": "bAffectPlayer:Poison",
+          "type": "toggle",
+          "text": "$FEC_AffectPlayer_Text",
+          "help": "$FEC_AffectPlayer_Poison_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        },
+        {
+          "id": "iRandomChanceNPC:Poison",
+          "type": "slider",
+          "text": "$FEC_RandomChanceNPC_Text",
+          "help": "$FEC_RandomChance_Poison_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0}% "
+          }
+        },
+        {
+          "id": "iRandomChanceCR:Poison",
+          "type": "slider",
+          "text": "$FEC_RandomChanceCR_Text",
+          "help": "$FEC_RandomChance_Poison_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0}% "
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "id": "iPoisonColor:Poison",
+          "type": "color",
+          "text": "$FEC_PoisonColor_Text",
+          "help": "$FEC_PoisonColor_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingInt",
+            "defaultValue": 8323582
+          }
+        },
+        {
+          "id": "sPoisonColorHex:Poison",
+          "type": "input",
+          "text": "$FEC_PoisonColorHex_Text",
+          "help": "$FEC_PoisonColorHex_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingString",
+            "defaultValue": "0x7F01FE"
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "type": "header",
+          "text": "$FEC_PoisonBlendMode_Header"
+        },
+        {
+          "id": "iBlendModes:PoisonBlendMode",
+          "type": "enum",
+          "text": "$FEC_PoisonBlendMode_Text",
+          "help": "$FEC_PoisonBlendMode_Help",
+          "valueOptions": {
+            "options": [
+              "$FEC_Darken_Enum",
+              "$FEC_Mutiply_Enum",
+              "$FEC_ColorBurn_Enum",
+              "$FEC_LinearBurn_Enum",
+              "$FEC_DarkerColor_Enum",
+              "$FEC_Lighten_Enum",
+              "$FEC_Screen_Enum",
+              "$FEC_ColorDodge_Enum",
+              "$FEC_LinearDodge_Enum",
+              "$FEC_LighterColor_Enum",
+              "$FEC_Overlay_Enum",
+              "$FEC_SoftLight_Enum",
+              "$FEC_HardLight_Enum",
+              "$FEC_VividLight_Enum",
+              "$FEC_LinearLight_Enum",
+              "$FEC_PinLight_Enum",
+              "$FEC_HardMix_Enum",
+              "$FEC_Difference_Enum",
+              "$FEC_Exclusion_Enum",
+              "$FEC_Subtract_Enum",
+              "$FEC_Divide_Enum"
+            ],
+            "sourceType": "ModSettingInt",
+            "defaultValue": 6
+          }
+        },
+        {
+          "id": "iPoisonIntensity:PoisonBlendMode",
+          "type": "slider",
+          "text": "$FEC_PoisonIntensity_Text",
+          "help": "$FEC_PoisonIntensity_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 200,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 80,
+            "formatString": "{0}%"
+          }
+        },
+        {
+          "id": "bAutoSkinLuminanceDetect:PoisonBlendMode",
+          "type": "toggle",
+          "text": "$FEC_AutoSkinLuminanceDetect_Text",
+          "help": "$FEC_AutoSkinLuminanceDetect_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "$FEC_OtherEffects_Page",
+      "cursorFillMode": "topToBottom",
+      "content": [
+        {
+          "type": "header",
+          "text": "$FEC_Air_Header"
+        },
+        {
+          "id": "iRandomChance:Air",
+          "type": "slider",
+          "text": "$FEC_RandomChance_Text",
+          "help": "$FEC_RandomChance_Air_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0}% "
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "type": "header",
+          "text": "$FEC_DragonSoulAbsorb_Header"
+        },
+        {
+          "id": "bAffectPlayer:DragonSoulAbsorb",
+          "type": "toggle",
+          "text": "$FEC_AffectPlayer_Text",
+          "help": "$FEC_AffectPlayer_DragonSoulAbsorb_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": false
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "type": "header",
+          "text": "Vampire Lord"
+        },
+        {
+          "id": "bAffectPlayer:VampireLord",
+          "type": "toggle",
+          "text": "$FEC_AffectPlayer_Text",
+          "help": "$FEC_AffectPlayer_VampireLord_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "type": "header",
+          "text": "$FEC_Fear_Header"
+        },
+        {
+          "id": "iRandomChanceNPC:Fear",
+          "type": "slider",
+          "text": "$FEC_RandomChanceNPC_Text",
+          "help": "$FEC_RandomChance_Fear_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0}% "
+          }
+        },
+        {
+          "id": "iRandomChanceCR:Fear",
+          "type": "slider",
+          "text": "$FEC_RandomChanceCR_Text",
+          "help": "$FEC_RandomChance_Fear_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0}% "
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "type": "header",
+          "text": "$FEC_SoulTrap_Header",
+          "position": 1
+        },
+        {
+          "id": "iRandomChanceNPC:SoulTrap",
+          "type": "slider",
+          "text": "$FEC_RandomChanceNPC_Text",
+          "help": "$FEC_RandomChance_SoulTrap_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0}% "
+          }
+        },
+        {
+          "id": "iRandomChanceCR:SoulTrap",
+          "type": "slider",
+          "text": "$FEC_RandomChanceCR_Text",
+          "help": "$FEC_RandomChance_SoulTrap_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0}% "
+          }
+        },
+        {
+          "type": "empty"
+        },
+        {
+          "type": "header",
+          "text": "$FEC_Sun_Header"
+        },
+        {
+          "id": "bAffectPlayer:Sun",
+          "type": "toggle",
+          "text": "$FEC_AffectPlayer_Text",
+          "help": "$FEC_AffectPlayer_Sun_Help",
+          "valueOptions": {
+            "sourceType": "ModSettingBool",
+            "defaultValue": true
+          }
+        },
+        {
+          "id": "iRandomChanceNPC:Sun",
+          "type": "slider",
+          "text": "$FEC_RandomChanceNPC_Text",
+          "help": "$FEC_RandomChance_Sun_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0}% "
+          }
+        },
+        {
+          "id": "iRandomChanceCR:Sun",
+          "type": "slider",
+          "text": "$FEC_RandomChanceCR_Text",
+          "help": "$FEC_RandomChance_Sun_Help",
+          "valueOptions": {
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0}% "
+          }
+        },
+        {
+          "id": "iSunParticleCount:Sun",
+          "type": "slider",
+          "text": "$FEC_ParticleCount_Sun_Text",
+          "help": "$FEC_ParticleCount_Sun_Help",
+          "valueOptions": {
+            "min": 25,
+            "max": 500,
+            "step": 1,
+            "sourceType": "ModSettingInt",
+            "defaultValue": 100,
+            "formatString": "{0} particles"
+          }
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "$FEC_Fixes_Page",
+      "cursorFillMode": "topToBottom",
+      "content": [
+        {
+          "id": "sResetActor3D:Fixes",
+          "type": "text",
+          "text": "$FEC_ResetActor3D_Text",
+          "help": "$FEC_ResetActor3D_Help",
+          "valueOptions": {
+            "value": "",
+            "sourceType": "ModSettingString"
+          },
+          "action": {
+            "type": "CallFunction",
+            "function": "ResetActor3DSingle"
+          }
+        },
+        {
+          "id": "sResetActor3DAll:Fixes",
+          "type": "text",
+          "text": "$FEC_ResetActor3DAll_Text",
+          "help": "$FEC_ResetActor3DAll_Help",
+          "valueOptions": {
+            "value": "",
+            "sourceType": "ModSettingString"
+          },
+          "action": {
+            "type": "CallFunction",
+            "function": "ResetActor3DAll"
+          }
+        }
+      ]
+    }
+  ]
+}
