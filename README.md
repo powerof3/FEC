@@ -36,6 +36,10 @@ Dll for [Skyrim mod FEC](https://www.nexusmods.com/skyrimspecialedition/mods/353
 ```
 git clone https://github.com/powerof3/FEC
 cd FEC
+# pull commonlib, skip if you've defined it in the path
+git submodule init
+# to update submodules to checked-out build (warning, pulling newer verisons may result in build problems)
+git submodule update
 ```
 ### SSE
 ```
