@@ -163,7 +163,7 @@ namespace FEC::GRAPHICS
 						if (material) {
 							auto [result, shaderData] = get_original_shaders(originalData);
 							if (!result) {
-								logger::warn("unable to get original shader values for {}", a_geometry->name);
+								logger::warn("unable to get original shader values for {}", a_geometry->name.data());
 								return RE::BSVisit::BSVisitControl::kContinue;
 							}
 
