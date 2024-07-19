@@ -17,7 +17,7 @@ namespace FEC::GRAPHICS
 
 	namespace TEXTURE
 	{
-		void sanitize_path(std::string& a_path);
+		void                    sanitize_path(std::string& a_path);
 		RE::BSShaderTextureSet* create_textureset(char** a_value);
 	}
 
@@ -47,7 +47,7 @@ namespace FEC::GRAPHICS
 
 		using ShaderData = std::tuple<RE::BSShaderTextureSet*, Feature, std::uint64_t, RE::NiColor, float>;
 
-		void stop_all_skin_shaders(RE::TESObjectREFR* a_ref);
+		void                       stop_all_skin_shaders(RE::TESObjectREFR* a_ref);
 		std::pair<bool, ResetData> get_data(RE::NiAVObject* a_object);
 
 		void Toggle(RE::NiAVObject* a_root, RE::NiStringsExtraData* a_data);

@@ -44,12 +44,13 @@ namespace FEC::Serialization
 	};
 
 	class Manager :
+		public ISingleton<Manager>,
 		public RE::BSTEventSink<RE::TESFormDeleteEvent>,
 		public RE::BSTEventSink<RE::TESResetEvent>,
 		public RE::BSTEventSink<RE::TESLoadGameEvent>
 	{
 	public:
-		using TempEffectSet = robin_hood::unordered_flat_set<ActorEffect::Temporary>;
+		using TempEffectSet = ankerl::unordered_dense::set<ActorEffect::Temporary>;
 
 		template <class T>
 		class ActorEffectMap
@@ -112,7 +113,7 @@ namespace FEC::Serialization
 				_map.clear();
 
 				if constexpr (std::is_same_v<T, ActorEffect::Permanent>) {
-					RE::FormID formID;
+					RE::FormID   formID;
 					std::int32_t effect;
 
 					for (std::size_t i = 0; i < numRegs; i++) {
@@ -127,8 +128,8 @@ namespace FEC::Serialization
 					}
 
 				} else {
-					RE::FormID formID;
-					std::size_t numEffects;
+					RE::FormID   formID;
+					std::size_t  numEffects;
 					std::int32_t effect;
 
 					for (std::size_t i = 0; i < numRegs; i++) {
@@ -169,27 +170,27 @@ namespace FEC::Serialization
 				if constexpr (std::is_same_v<T, ActorEffect::Permanent>) {
 					for (auto& [key, mapped] : _map) {
 						if (!a_intfc->WriteRecordData(key)) {
-							logger::error("	Failed to save key ({:X}: {})!", key, stl::to_underlying(mapped));
+							logger::error("\tFailed to save key ({:X}: {})!", key, std::to_underlying(mapped));
 							return false;
 						}
-						if (!a_intfc->WriteRecordData(stl::to_underlying(mapped))) {
-							logger::error("	Failed to save value ({:X}: {})!", key, stl::to_underlying(mapped));
+						if (!a_intfc->WriteRecordData(std::to_underlying(mapped))) {
+							logger::error("\tFailed to save value ({:X}: {})!", key, std::to_underlying(mapped));
 							return false;
 						}
 					}
 				} else {
 					for (auto& [key, set] : _map) {
 						if (!a_intfc->WriteRecordData(key)) {
-							logger::error("	Failed to save key ({:X})!", key);
+							logger::error("\tFailed to save key ({:X})!", key);
 							return false;
 						}
 						if (!a_intfc->WriteRecordData(set.size())) {
-							logger::error("	Failed to save value size ({:X})!", key);
+							logger::error("\tFailed to save value size ({:X})!", key);
 							return false;
 						}
 						for (auto& mapped : set) {
-							if (!a_intfc->WriteRecordData(stl::to_underlying(mapped))) {
-								logger::error("	Failed to save reg ({:X} : {})!", key, stl::to_underlying(mapped));
+							if (!a_intfc->WriteRecordData(std::to_underlying(mapped))) {
+								logger::error("\tFailed to save reg ({:X} : {})!", key, std::to_underlying(mapped));
 								return false;
 							}
 						}
@@ -206,15 +207,9 @@ namespace FEC::Serialization
 			}
 
 		private:
-			mutable Lock _lock{};
-			robin_hood::unordered_flat_map<RE::FormID, T> _map{};
+			mutable Lock                                _lock{};
+			ankerl::unordered_dense::map<RE::FormID, T> _map{};
 		};
-
-		static Manager* GetSingleton()
-		{
-			static Manager singleton;
-			return &singleton;
-		}
 
 		static void Register()
 		{
@@ -226,8 +221,6 @@ namespace FEC::Serialization
 			}
 		}
 
-		SKSE::RegistrationMap<std::uint32_t, const RE::Actor*, std::uint32_t, bool> FECreset{ "OnFECReset"sv };
-
 		void Save(SKSE::SerializationInterface* a_intfc);
 		void Load(SKSE::SerializationInterface* a_intfc);
 		void Revert(SKSE::SerializationInterface* a_intfc);
@@ -237,17 +230,10 @@ namespace FEC::Serialization
 		EventResult ProcessEvent(const RE::TESResetEvent* a_event, RE::BSTEventSource<RE::TESResetEvent>*) override;
 		EventResult ProcessEvent(const RE::TESLoadGameEvent* a_event, RE::BSTEventSource<RE::TESLoadGameEvent>*) override;
 
-		ActorEffectMap<ActorEffect::Permanent> permanentEffectMap;
-		ActorEffectMap<TempEffectSet> temporaryEffectMap;
-
-	private:
-		Manager() = default;
-		Manager(const Manager&) = delete;
-		Manager(Manager&&) = delete;
-		~Manager() override = default;
-
-		Manager& operator=(const Manager&) = delete;
-		Manager& operator=(Manager&&) = delete;
+		// members
+		SKSE::RegistrationMap<std::uint32_t, const RE::Actor*, std::uint32_t, bool> FECreset{ "OnFECReset"sv };
+		ActorEffectMap<ActorEffect::Permanent>                                      permanentEffectMap;
+		ActorEffectMap<TempEffectSet>                                               temporaryEffectMap;
 	};
 
 	void SaveCallback(SKSE::SerializationInterface* a_intfc);

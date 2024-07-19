@@ -12,9 +12,10 @@
 #include "SKSE/SKSE.h"
 
 #include <ClibUtil/numeric.hpp>
+#include <ClibUtil/singleton.hpp>
 #include <ClibUtil/string.hpp>
+#include <ankerl/unordered_dense.h>
 #include <frozen/map.h>
-#include <robin_hood.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <srell.hpp>
 #include <xbyak/xbyak.h>
@@ -24,9 +25,9 @@
 namespace logger = SKSE::log;
 namespace numeric = clib_util::numeric;
 namespace string = clib_util::string;
-namespace WinAPI = SKSE::WinAPI;
 
 using namespace std::literals;
+using namespace clib_util::singleton;
 
 namespace stl
 {
@@ -36,6 +37,8 @@ namespace stl
 	void write_thunk_call(std::uintptr_t a_src)
 	{
 		auto& trampoline = SKSE::GetTrampoline();
+		SKSE::AllocTrampoline(14);
+
 		T::func = trampoline.write_call<5>(a_src, T::thunk);
 	}
 

@@ -19,6 +19,10 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 
 				if (!FEC::mod) {
 					logger::error("unable to find FEC.esp");
+					if (consoleLog) {
+						consoleLog->Print("[FEC] FEC.esp is not loaded! Disabling FEC helper plugin\n");
+					}
+					return;
 				}
 
 				FEC::deathEffectsAbility = dataHandler->LookupForm<RE::SpellItem>(0x8E7, "FEC.esp");
@@ -26,11 +30,9 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 
 				if (!FEC::deathEffectsAbility || !deathEffectsPCAbility) {
 					logger::error("unable to find death effect abilities");
-
 					if (consoleLog) {
 						consoleLog->Print("[FEC] FEC.esp is not loaded! Disabling FEC helper plugin\n");
 					}
-
 					return;
 				}
 			}
@@ -124,12 +126,11 @@ void InitializeLog()
 
 extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse)
 {
+	SKSE::Init(a_skse);
+	
 	InitializeLog();
 
 	logger::info("Game version : {}", a_skse->RuntimeVersion().string());
-
-	SKSE::Init(a_skse);
-	SKSE::AllocTrampoline(75);
 
 	const auto messaging = SKSE::GetMessagingInterface();
 	messaging->RegisterListener(OnInit);

@@ -134,6 +134,7 @@ find_path(SRELL_INCLUDE_DIRS "srell.hpp")
 find_path(CLIB_UTIL_INCLUDE_DIRS "ClibUtil/utils.hpp")
 
 find_package(frozen CONFIG REQUIRED)
+find_package(unordered_dense CONFIG REQUIRED)
 
 # ---- Add source files ----
 include(cmake/headerlist.cmake)
@@ -186,6 +187,7 @@ target_link_libraries(
 	PRIVATE
 	${CommonLibName}::${CommonLibName}
 	frozen::frozen
+	unordered_dense::unordered_dense
 )
 
 target_precompile_headers(

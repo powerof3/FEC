@@ -103,7 +103,7 @@ namespace FEC::Papyrus
 #endif
 
 		deathEffectPair effectPair{ -1, nullptr };
-		deathEffectMap effectMap{};
+		deathEffectMap  effectMap{};
 
 		const auto deathMode = static_cast<DEATH::MODE>(a_type);
 
@@ -130,7 +130,7 @@ namespace FEC::Papyrus
 
 			if (effectMap.size() == 1) {
 				const auto& type = effectMap.begin()->first;
-				auto [effect, effectMag] = *std::ranges::max_element(effectMap.begin()->second, mag_cmp);
+				auto& [effect, effectMag] = *std::ranges::max_element(effectMap.begin()->second, mag_cmp);
 				effectPair = { type, effect };
 			} else {
 				if (a_type != 0) {
@@ -139,7 +139,7 @@ namespace FEC::Papyrus
 
 					if (poison) {
 						auto& poisonVec = effectMap[DEATH::TYPE::kPoison];
-						auto poisonEffect = *std::ranges::max_element(poisonVec, mag_cmp);
+						auto& poisonEffect = *std::ranges::max_element(poisonVec, mag_cmp);
 
 						effectPair = { DEATH::TYPE::kPoison, poisonEffect.first };
 						if (fear) {
@@ -147,7 +147,7 @@ namespace FEC::Papyrus
 						}
 					} else if (fear) {
 						auto& fearVec = effectMap[DEATH::TYPE::kFear];
-						auto poisonEffect = *std::ranges::max_element(fearVec, mag_cmp);
+						auto& poisonEffect = *std::ranges::max_element(fearVec, mag_cmp);
 
 						effectPair = { DEATH::TYPE::kFear, poisonEffect.first };
 					}
@@ -159,7 +159,7 @@ namespace FEC::Papyrus
 
 					if (fire) {
 						auto& fireVec = effectMap[DEATH::TYPE::kFire];
-						auto fireEffect = *std::ranges::max_element(fireVec, mag_cmp);
+						auto& fireEffect = *std::ranges::max_element(fireVec, mag_cmp);
 
 						effectPair = { DEATH::TYPE::kFire, fireEffect.first };
 						if (frost) {
@@ -169,13 +169,13 @@ namespace FEC::Papyrus
 						}
 					} else if (drain) {
 						auto& drainVec = effectMap[DEATH::TYPE::kDrain];
-						auto drainEffect = *std::ranges::max_element(drainVec, mag_cmp);
+						auto& drainEffect = *std::ranges::max_element(drainVec, mag_cmp);
 
 						effectPair = { DEATH::TYPE::kDrain, drainEffect.first };
 						if (shock) {
 							effectPair.first = DEATH::TYPE::kDrainShock;
 							auto& shockVec = effectMap[DEATH::TYPE::kShock];
-							auto shockEffect = *std::ranges::max_element(shockVec, mag_cmp);
+							auto& shockEffect = *std::ranges::max_element(shockVec, mag_cmp);
 
 							if (numeric::definitely_less_than(drainEffect.second, shockEffect.second)) {
 								effectPair.second = shockEffect.first;
@@ -183,7 +183,7 @@ namespace FEC::Papyrus
 						} else if (frost) {
 							effectPair.first = DEATH::TYPE::kDrainFrost;
 							auto& frostVec = effectMap[DEATH::TYPE::kFrost];
-							auto frostEffect = *std::ranges::max_element(frostVec, mag_cmp);
+							auto& frostEffect = *std::ranges::max_element(frostVec, mag_cmp);
 
 							if (numeric::definitely_less_than(drainEffect.second, frostEffect.second)) {
 								effectPair.second = frostEffect.first;
@@ -191,12 +191,12 @@ namespace FEC::Papyrus
 						}
 					} else if (frost) {
 						auto& frostVec = effectMap[DEATH::TYPE::kFrost];
-						auto frostEffect = *std::ranges::max_element(frostVec, mag_cmp);
+						auto  frostEffect = *std::ranges::max_element(frostVec, mag_cmp);
 
 						effectPair = { DEATH::TYPE::kFrost, frostEffect.first };
 						if (shock) {
 							auto& shockVec = effectMap[DEATH::TYPE::kShock];
-							auto shockEffect = *std::ranges::max_element(shockVec, mag_cmp);
+							auto& shockEffect = *std::ranges::max_element(shockVec, mag_cmp);
 
 							if (numeric::definitely_less_than(frostEffect.second, shockEffect.second)) {
 								effectPair = { DEATH::TYPE::kShockFrost, shockEffect.first };
@@ -206,7 +206,7 @@ namespace FEC::Papyrus
 						}
 					} else if (shock) {
 						auto& shockVec = effectMap[DEATH::TYPE::kShock];
-						auto shockEffect = *std::ranges::max_element(shockVec, mag_cmp);
+						auto  shockEffect = *std::ranges::max_element(shockVec, mag_cmp);
 
 						effectPair = { DEATH::TYPE::kShock, shockEffect.first };
 					}
@@ -243,7 +243,7 @@ namespace FEC::Papyrus
 			return;
 		}
 
-		bool result = false;
+		bool             result = false;
 		RESET::ResetData resetData{};
 
 		std::tie(result, resetData) = RESET::get_data(root);

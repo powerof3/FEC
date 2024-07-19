@@ -13,7 +13,7 @@ namespace FEC
 	using StackID = RE::VMStackID;
 	using Severity = RE::BSScript::ErrorLogger::Severity;
 
-	inline RE::TESFile* mod;
+	inline RE::TESFile*   mod;
 	inline RE::SpellItem* deathEffectsPCAbility;
 	inline RE::SpellItem* deathEffectsAbility;
 
@@ -128,7 +128,7 @@ namespace FEC
 		inline constexpr RE::FormID DLC1_SunCloakSpellHandFX{ 0x0200A3BD };
 
 		inline constexpr std::array<RE::FormID, 3> FEC_fireFXS = { 0x8E2, 0x877, 0x896 };
-		inline constexpr RE::FormID FEC_sunFXS{ 0x807 };
+		inline constexpr RE::FormID                FEC_sunFXS{ 0x807 };
 
 		inline constexpr std::array<RE::FormID, 3> sunHitFXS = { 0x02019C9D, 0x0200A3BB, 0x0200A3BC };
 		inline constexpr std::array<RE::FormID, 2> sunHitArt = { 0x0200A3B7, 0x0200A3B8 };

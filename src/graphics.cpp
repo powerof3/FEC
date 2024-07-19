@@ -101,11 +101,11 @@ namespace FEC::GRAPHICS
 				object->UpdateMaterialAlpha(a_alpha, false);
 
 				if (a_setData) {
-					const auto name = "PO3_HEADPART - " + std::to_string(stl::to_underlying(a_type));
+					const auto name = "PO3_HEADPART - " + std::to_string(std::to_underlying(a_type));
 					if (a_alpha == 1.0f) {
 						a_root->RemoveExtraData(name);
 					} else {
-						EXTRA::add_data_if_none<RE::NiIntegerExtraData>(a_root, name, stl::to_underlying(a_type));
+						EXTRA::add_data_if_none<RE::NiIntegerExtraData>(a_root, name, std::to_underlying(a_type));
 					}
 				}
 			}
@@ -119,7 +119,7 @@ namespace FEC::GRAPHICS
 			static std::pair<bool, ShaderData> get_original_shaders(RE::NiStringsExtraData* a_data)
 			{
 				ShaderData shaderData;
-				bool result = true;
+				bool       result = true;
 
 				if (a_data && a_data->value && a_data->size > 0) {
 					auto& [textureSet, feature, flags, emissiveColor, emissiveMult] = shaderData;
@@ -253,12 +253,12 @@ namespace FEC::GRAPHICS
 
 			if (const auto processLists = RE::ProcessLists::GetSingleton(); processLists) {
 				const auto handle = a_ref->CreateRefHandle();
-				processLists->ForEachShaderEffect([&](RE::ShaderReferenceEffect& a_shaderEffect) {
-					if (a_shaderEffect.target == handle) {
-						if (const auto effectData = a_shaderEffect.effectData; effectData &&
+				processLists->ForEachShaderEffect([&](RE::ShaderReferenceEffect* a_shaderEffect) {
+					if (a_shaderEffect->target == handle) {
+						if (const auto effectData = a_shaderEffect->effectData; effectData &&
 																			   effectData->data.flags.all(Flags::kSkinOnly) &&
 																			   !effectData->holesTexture.textureName.empty()) {
-							a_shaderEffect.finished = true;
+							a_shaderEffect->finished = true;
 						}
 					}
 					return RE::BSContainer::ForEachResult::kContinue;
@@ -269,7 +269,7 @@ namespace FEC::GRAPHICS
 		std::pair<bool, ResetData> get_data(RE::NiAVObject* a_object)
 		{
 			ResetData resetData;
-			bool success = false;
+			bool      success = false;
 
 			if (!a_object->extra || a_object->extraDataSize == 0) {
 				return { success, resetData };

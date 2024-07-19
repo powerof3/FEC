@@ -251,7 +251,7 @@ namespace FEC
 					using Flag = RE::EffectSetting::EffectSettingData::Flag;
 
 					const auto hitFXS = a_mgef->data.effectShader;
-					bool isSunEffect = hitFXS && std::ranges::find(shader::sunHitFXS, hitFXS->GetFormID()) != shader::sunHitFXS.end();
+					bool       isSunEffect = hitFXS && std::ranges::find(shader::sunHitFXS, hitFXS->GetFormID()) != shader::sunHitFXS.end();
 
 					if (!isSunEffect) {
 						const auto hitArt = a_mgef->data.hitEffectArt;

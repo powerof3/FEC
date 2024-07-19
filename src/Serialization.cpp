@@ -36,14 +36,14 @@ namespace FEC::Serialization
 		std::uint32_t length;
 		while (a_intfc->GetNextRecordInfo(type, version, length)) {
 			if (version < kSerializationVersion) {
-				logger::critical("Loaded data is out of date! Read ({}), expected ({}) for type code ({})", version, stl::to_underlying(kSerializationVersion), DecodeTypeCode(type));
+				logger::critical("Loaded data is out of date! Read ({}), expected ({}) for type code ({})", version, std::to_underlying(kSerializationVersion), DecodeTypeCode(type));
 				continue;
 			}
 			switch (type) {
 			case kFECReset:
 				{
 					if (version != kFECResetVersion) {
-						logger::critical("Loaded data for FEC reset is out of date! Read ({}), expected ({}) for type code ({})", version, stl::to_underlying(kFECResetVersion), DecodeTypeCode(type));
+						logger::critical("Loaded data for FEC reset is out of date! Read ({}), expected ({}) for type code ({})", version, std::to_underlying(kFECResetVersion), DecodeTypeCode(type));
 					} else {
 						FECreset.Load(a_intfc);
 					}
