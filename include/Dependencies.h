@@ -32,7 +32,7 @@ namespace Dependencies
 	using _PEGETVERSION = const char* (*)();
 
 	std::string CheckErrors();
-	
+
 	inline constexpr auto PapyrusExtender{ "po3_PapyrusExtender"sv };
 	inline constexpr auto PapyrusUtil{ "PapyrusUtil"sv };
 	inline constexpr auto po3Tweaks{ "po3_Tweaks"sv };
