@@ -173,6 +173,7 @@ namespace FEC
 		inline constexpr auto bra0{ "Bra"sv };
 		inline constexpr auto bra1{ "BraBowTies1"sv };
 		inline constexpr auto bra2{ "BraBowTies2"sv };
+		inline constexpr auto bra3{ "Laced Bra"sv };
 		inline constexpr auto panty0{ "Panty"sv };
 		inline constexpr auto panty1{ "PantyBowTies1"sv };
 		inline constexpr auto panty2{ "PantyBowTies2"sv };
@@ -187,6 +188,7 @@ namespace FEC
 			bra0,
 			bra1,
 			bra2,
+			bra3,
 			panty0,
 			panty1,
 			panty2
