@@ -229,6 +229,9 @@
           }
         },
         {
+          "type": "empty"
+        },
+        {
           "id": "bChar:FireEffects",
           "type": "toggle",
           "text": "$FEC_Char_Text",
@@ -241,9 +244,7 @@
           "groupCondition": {
             "NOT": [
               2,
-              3,
-              5,
-              6
+              3
             ]
           }
         },
@@ -260,9 +261,7 @@
           "groupCondition": {
             "NOT": [
               2,
-              4,
-              3,
-              6
+              3
             ]
           }
         },
@@ -279,8 +278,6 @@
           "groupCondition": {
             "NOT": [
               2,
-              4,
-              5,
               3
             ]
           }
@@ -327,6 +324,9 @@
           }
         },
         {
+          "type": "empty"
+        },
+        {
           "id": "bCharCR:FireEffects",
           "type": "toggle",
           "text": "$FEC_Char_Text",
@@ -339,8 +339,7 @@
           "groupCondition": {
             "NOT": [
               7,
-              8,
-              10
+              8
             ]
           }
         },
@@ -357,13 +356,9 @@
           "groupCondition": {
             "NOT": [
               7,
-              8,
-              9
+              8
             ]
           }
-        },
-        {
-          "type": "empty"
         },
         {
           "type": "header",
@@ -394,9 +389,6 @@
           }
         },
         {
-          "type": "empty"
-        },
-        {
           "type": "header",
           "text": "$FEC_Immersion_Header"
         },
@@ -419,6 +411,9 @@
             "sourceType": "ModSettingBool",
             "defaultValue": true
           }
+        },
+        {
+          "type": "empty"
         },
         {
           "id": "bAllowBurnClothing:FireImmersion",
@@ -542,6 +537,9 @@
           }
         },
         {
+          "type": "empty"
+        },
+        {
           "id": "bFreeze:FrostEffects",
           "type": "toggle",
           "text": "$FEC_Freeze_Text",
@@ -554,9 +552,7 @@
           "groupCondition": {
             "NOT": [
               13,
-              14,
-              16,
-              17
+              14
             ]
           }
         },
@@ -573,9 +569,7 @@
           "groupCondition": {
             "NOT": [
               13,
-              14,
-              15,
-              17
+              14
             ]
           }
         },
@@ -592,9 +586,7 @@
           "groupCondition": {
             "NOT": [
               13,
-              14,
-              15,
-              16
+              14
             ]
           }
         },
@@ -621,6 +613,9 @@
           }
         },
         {
+          "type": "empty"
+        },
+        {
           "id": "bFreezeCR:FrostEffects",
           "type": "toggle",
           "text": "$FEC_Freeze_Text",
@@ -632,8 +627,7 @@
           "groupControl": 19,
           "groupCondition": {
             "NOT": [
-              18,
-              20
+              18
             ]
           }
         },
@@ -649,13 +643,9 @@
           "groupControl": 20,
           "groupCondition": {
             "NOT": [
-              18,
-              19
+              18
             ]
           }
-        },
-        {
-          "type": "empty"
         },
         {
           "type": "header",
@@ -771,6 +761,9 @@
           }
         },
         {
+          "type": "empty"
+        },
+        {
           "id": "bSinge:ShockEffects",
           "type": "toggle",
           "text": "$FEC_Singe_Text",
@@ -783,9 +776,7 @@
           "groupCondition": {
             "NOT": [
               21,
-              22,
-              24,
-              25
+              22
             ]
           }
         },
@@ -802,9 +793,7 @@
           "groupCondition": {
             "NOT": [
               21,
-              22,
-              23,
-              25
+              22
             ]
           }
         },
@@ -821,9 +810,7 @@
           "groupCondition": {
             "NOT": [
               21,
-              22,
-              23,
-              24
+              22
             ]
           }
         },
@@ -926,6 +913,9 @@
           }
         },
         {
+          "type": "empty"
+        },
+        {
           "id": "bAge:DrainEffects",
           "type": "toggle",
           "text": "$FEC_Age_DrainEffects_Text",
@@ -938,8 +928,7 @@
           "groupCondition": {
             "NOT": [
               26,
-              27,
-              29
+              27
             ]
           }
         },
@@ -956,8 +945,7 @@
           "groupCondition": {
             "NOT": [
               26,
-              27,
-              28
+              27
             ]
           }
         }
@@ -1117,9 +1105,6 @@
           }
         },
         {
-          "type": "empty"
-        },
-        {
           "type": "header",
           "text": "$FEC_DragonSoulAbsorb_Header"
         },
@@ -1134,9 +1119,6 @@
           }
         },
         {
-          "type": "empty"
-        },
-        {
           "type": "header",
           "text": "Vampire Lord"
         },
@@ -1149,9 +1131,6 @@
             "sourceType": "ModSettingBool",
             "defaultValue": true
           }
-        },
-        {
-          "type": "empty"
         },
         {
           "type": "header",
@@ -1186,9 +1165,6 @@
           }
         },
         {
-          "type": "empty"
-        },
-        {
           "type": "header",
           "text": "$FEC_SoulTrap_Header",
           "position": 1
@@ -1220,9 +1196,6 @@
             "defaultValue": 100,
             "formatString": "{0}% "
           }
-        },
-        {
-          "type": "empty"
         },
         {
           "type": "header",

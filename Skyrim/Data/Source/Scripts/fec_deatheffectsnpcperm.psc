@@ -336,8 +336,9 @@ Auto State Default
 												
 			;---------------VARIABLES---------------														
 			victimBase = victim.GetLeveledActorBase()
-			victimRace = victimBase.GetRace()			
-			
+			victimRace = victimBase.GetRace()
+			isReanimated = GetActorState(victim) == 4			
+		
 			; block all effects if target is immune to disintegration
 			if victimBase && DisintegrationMainImmunityList.HasForm(victimBase) || victimRace && DisintegrationMainImmunityList.HasForm(victimRace)
 				GoToState("EMPTY")
@@ -348,13 +349,12 @@ Auto State Default
 			greyHair = FEC_ListHairColor.GetAt(0) as ColorForm		
 						
 			disintegrateProof = IsDisintegrateProof(victim)
-			isReanimated = GetActorState(victim) == 4
 			refractionArt = GetArtObject(FEC_FireHeatRefractionEffect)			
 			;----------------------------------------
 																												
 			if GetPermanentDeathEffect(victim, kEFFECT_None)
 																							
-				if GetPermanentDeathEffect(victim, kEFFECT_Reset)
+				if GetPermanentDeathEffect(victim, kEFFECT_Reset) || !victim.IsDead() && !isReanimated ;if victim is alive for whatever reason
 				
 					ClearPermEffectSerialization()	
 					ClearTempEffectSerialization()
@@ -2345,17 +2345,49 @@ endFunction
 
 int Function GetEffectType(int type)
 
+	int effectTypes = 1; AUTO
+	int effectCount = 5;
+	
 	if type == kFIRE 			
-		return FEC_FireModes.GetValue() as int				
+		effectTypes = FEC_FireModes.GetValue() as int				
 	elseif type == kFROST 
-		return FEC_FrostModes.GetValue() as int		
+		effectTypes = FEC_FrostModes.GetValue() as int		
 	elseif type == kSHOCK
-		return FEC_ShockModes.GetValue() as int	
+		effectTypes = FEC_ShockModes.GetValue() as int	
 	elseif type == kDRAIN
-		return FEC_DrainModes.GetValue() as int		
+		effectTypes = FEC_DrainModes.GetValue() as int		
+		effectCount = 4
 	endif
 	
-	return 1 ;AUTO
+	; Random or Auto
+	if (effectTypes < 2)
+		return effectTypes
+	endif
+	
+	int activeEffectCount = 0
+	
+	int i = 2
+	while i < effectCount
+		if GetFlagSet(effectTypes, i)
+			activeEffectCount += 1
+		endif
+		i+= 1
+	endWhile
+	
+	int randomActiveEffect = GenerateRandomInt(0, activeEffectCount);
+	
+	; return randomActiveEffect if only flag is set
+	i = 2
+	while i < effectCount
+		if GetFlagSet(effectTypes, i)
+			if i - 2 == randomActiveEffect
+				return i
+			endif
+		endif
+		i+= 1
+	endWhile
+	
+	return 1
 	
 endFunction	
 
@@ -2517,5 +2549,11 @@ Function UnregisterComplexEvents()
 		UnregisterForAllHitEventsEx(self)
 		UnregisterForAllFECResets(self)
 	endif
+
+endFunction
+
+bool Function GetFlagSet(int aiNum, int aiFlag)
+
+	return Math.LogicalAnd(aiNum, Math.LeftShift(1, aiFlag))
 
 endFunction

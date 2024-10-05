@@ -226,10 +226,6 @@ Event OnSettingChange(String a_ID)
 		SetGlobalInt(FEC_FireRandomChance, a_ID)
 	elseif a_ID == "iRandomChanceCR:Fire"
 		SetGlobalInt(FEC_FireRandomChanceCR, a_ID)
-	elseif a_ID == "bRandom:FireEffects"
-		if GetModSettingBool(a_ID)
-			FEC_FireModes.SetValue(0.0)
-		endif
 	elseif SetEffectModeOnChange(FEC_FireModes, a_ID, fireModes)
 		return
 	elseif a_ID == "iFireParticleCount:FireVisuals"
@@ -386,12 +382,21 @@ endFunction
 
 Function SetEffectMode(GlobalVariable gVar, String[] settings)
 
-	int i = 0
+	if GetModSettingBool(settings[0])
+		gVar.SetValue(0.0)
+		return
+	elseif GetModSettingBool(settings[1])
+		gVar.SetValue(1.0)
+		return
+	endif
+	
+	gVar.SetValue(0.0)
+
+	int i = 2
 	int len = settings.Length	
 	while i < len
 		if GetModSettingBool(settings[i])
-			gVar.SetValue(i as float)
-			return
+			gVar.Mod(Math.LeftShift(1, i) as float)
 		endif
 		i += 1
 	endWhile
@@ -400,19 +405,24 @@ endFunction
 
 bool Function SetEffectModeOnChange(GlobalVariable gVar, String a_ID, String[] settings)
 
-	int i = 0
-	int len = settings.Length	
-	while i < len
-		if a_ID == settings[i]
-			if GetModSettingBool(settings[i])
-				gVar.SetValue(i as float)
-			endif
-			return true
-		endif
-		i += 1
-	endWhile
+	int idx = settings.Find(a_ID)
+	if idx < 0
+		return false
+	endif
 	
-	return false
+	if idx < 2
+		if GetModSettingBool(a_ID)
+			gVar.SetValue(idx)
+		endif
+	else
+		if GetModSettingBool(a_ID)
+			gVar.Mod(Math.LeftShift(1, idx) as float)
+		else
+			gVar.Mod(-Math.LeftShift(1, idx) as float)			
+		endif
+	endif
+	
+	return true
 
 endFunction
 
@@ -442,10 +452,11 @@ Function SetupEffectModes()
 	frostModes[3] = "bIceBlock:FrostEffects"
 	frostModes[4] = "bShatter:FrostEffects"
 
-	frostModesCR = new String[3]
-	frostModesCR[0] = "bAutomaticCR:FrostEffects"
-	frostModesCR[1] = "bFreezeCR:FrostEffects"
-	frostModesCR[2] = "bIceBlockCR:FrostEffects"
+	frostModesCR = new String[4]
+	frostModesCR[0] = "bRandomCR:FrostEffects"
+	frostModesCR[1] = "bAutomaticCR:FrostEffects"
+	frostModesCR[2] = "bFreezeCR:FrostEffects"
+	frostModesCR[3] = "bIceBlockCR:FrostEffects"
 
 	shockModes = new String[5]
 	shockModes[0] = "bRandom:ShockEffects"
