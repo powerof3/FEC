@@ -9,8 +9,8 @@
 #include <shared_mutex>
 
 #include "RE/Skyrim.h"
-#include "SKSE/SKSE.h"
 #include "REX/REX/Singleton.h"
+#include "SKSE/SKSE.h"
 
 #include <ClibUtil/numeric.hpp>
 #include <ClibUtil/string.hpp>
