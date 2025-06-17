@@ -9,7 +9,7 @@ namespace FEC
 			using Flags = RE::TOPIC_INFO_DATA::TOPIC_INFO_FLAGS;
 
 			if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-				const auto frostKYWD = RE::TESForm::LookupByEditorID<RE::BGSKeyword>(keyword::Frost);
+				const auto frostKYWD = RE::TESForm::LookupByEditorID<RE::BGSKeyword>(KEYWORD::Frost);
 				if (!frostKYWD) {
 					return;
 				}
@@ -49,11 +49,11 @@ namespace FEC
 		void BodyTintColor()
 		{
 			if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-				const auto falmerFaction = RE::TESForm::LookupByID<RE::TESFaction>(faction::falmer);
-				const auto giantFaction = RE::TESForm::LookupByID<RE::TESFaction>(faction::giant);
-				const auto hagravenFaction = RE::TESForm::LookupByID<RE::TESFaction>(faction::hagraven);
-				const auto rieklingFaction = RE::TESForm::LookupByID<RE::TESFaction>(faction::riekling);
-				const auto thirstRieklingFaction = RE::TESForm::LookupByID<RE::TESFaction>(faction::thirstRiekling);
+				const auto falmerFaction = RE::TESForm::LookupByID<RE::TESFaction>(FACTION::falmer);
+				const auto giantFaction = RE::TESForm::LookupByID<RE::TESFaction>(FACTION::giant);
+				const auto hagravenFaction = RE::TESForm::LookupByID<RE::TESFaction>(FACTION::hagraven);
+				const auto rieklingFaction = RE::TESForm::LookupByID<RE::TESFaction>(FACTION::riekling);
+				const auto thirstRieklingFaction = RE::TESForm::LookupByID<RE::TESFaction>(FACTION::thirstRiekling);
 
 				std::uint32_t falmerCount = 0;
 				std::uint32_t giantCount = 0;
@@ -64,16 +64,16 @@ namespace FEC
 					if (actorbase && !actorbase->HasApplicableKeywordString("ActorTypeNPC"sv)) {
 						if (actorbase->IsInFaction(falmerFaction)) {
 							falmerCount++;
-							actorbase->bodyTintColor = color::falmer;
+							actorbase->bodyTintColor = COLOR::falmer;
 						} else if (actorbase->IsInFaction(giantFaction)) {
 							giantCount++;
-							actorbase->bodyTintColor = color::giant;
+							actorbase->bodyTintColor = COLOR::giant;
 						} else if (actorbase->IsInFaction(hagravenFaction)) {
 							hagravenCount++;
-							actorbase->bodyTintColor = color::hagraven;
+							actorbase->bodyTintColor = COLOR::hagraven;
 						} else if (actorbase->IsInFaction(rieklingFaction) || actorbase->IsInFaction(thirstRieklingFaction)) {
 							rieklingCount++;
-							actorbase->bodyTintColor = color::riekling;
+							actorbase->bodyTintColor = COLOR::riekling;
 						}
 					}
 				}
@@ -83,12 +83,12 @@ namespace FEC
 
 		void FireShaders()
 		{
-			const auto defFireFXS = RE::TESForm::LookupByID<RE::TESEffectShader>(shader::fireFXShader);
-			if (defFireFXS && defFireFXS->particleShaderTexture.textureName == str::embersXDPath) {
+			const auto defFireFXS = RE::TESForm::LookupByID<RE::TESEffectShader>(EFFECT_SHADER::fireFXShader);
+			if (defFireFXS && defFireFXS->particleShaderTexture.textureName == PATH::embersXD) {
 				std::vector<RE::TESEffectShader*> fireFXS;
-				fireFXS.reserve(shader::FEC_fireFXS.size());
+				fireFXS.reserve(EFFECT_SHADER::FEC_fireFXS.size());
 
-				for (auto& formID : shader::FEC_fireFXS) {
+				for (auto& formID : EFFECT_SHADER::FEC_fireFXS) {
 					fireFXS.emplace_back(RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESEffectShader>(formID, "FEC.esp"));
 				}
 
@@ -111,18 +111,18 @@ namespace FEC
 		{
 			const auto dataHandler = RE::TESDataHandler::GetSingleton();
 
-			const auto listFoodRaw = dataHandler->LookupForm<RE::BGSListForm>(list::rawFood, "FEC.esp");
-			const auto listFoodCooked = dataHandler->LookupForm<RE::BGSListForm>(list::cookedFood, "FEC.esp");
+			const auto listFoodRaw = dataHandler->LookupForm<RE::BGSListForm>(FORMLIST::rawFood, "FEC.esp");
+			const auto listFoodCooked = dataHandler->LookupForm<RE::BGSListForm>(FORMLIST::cookedFood, "FEC.esp");
 
 			if (dataHandler->LookupModByName("Complete Alchemy & Cooking Overhaul.esp")) {
-				for (auto& [rawID, cookedID] : food::caco_map) {
+				for (auto& [rawID, cookedID] : FOOD::caco_map) {
 					listFoodRaw->AddForm(RE::TESForm::LookupByEditorID(rawID));
 					listFoodCooked->AddForm(RE::TESForm::LookupByEditorID(cookedID));
 				}
 				logger::info("Applied CACO patch");
 			}
 			if (dataHandler->LookupModByName("Hunterborn.esp")) {
-				for (auto& [rawID, cookedID] : food::hunterborn_map) {
+				for (auto& [rawID, cookedID] : FOOD::hunterborn_map) {
 					listFoodRaw->AddForm(RE::TESForm::LookupByEditorID(rawID));
 					listFoodCooked->AddForm(RE::TESForm::LookupByEditorID(cookedID));
 				}
@@ -143,16 +143,16 @@ namespace FEC
 	{
 		void FireShaders()
 		{
-			const auto FEC_FireFXParticleCount = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESGlobal>(global::FEC_FireFXParticleCount, "FEC.esp");
+			const auto FEC_FireFXParticleCount = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESGlobal>(GLOBAL::FEC_FireFXParticleCount, "FEC.esp");
 
 			if (!FEC_FireFXParticleCount) {
 				return;
 			}
 
 			std::vector<RE::TESEffectShader*> fireFXS;
-			fireFXS.reserve(shader::FEC_fireFXS.size());
+			fireFXS.reserve(EFFECT_SHADER::FEC_fireFXS.size());
 
-			for (auto& formID : shader::FEC_fireFXS) {
+			for (auto& formID : EFFECT_SHADER::FEC_fireFXS) {
 				fireFXS.emplace_back(RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESEffectShader>(formID, "FEC.esp"));
 			}
 
@@ -167,8 +167,8 @@ namespace FEC
 
 		void SunShader()
 		{
-			const auto FEC_SunFXParticleCount = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESGlobal>(global::FEC_SunFXParticleCount, "FEC.esp");
-			const auto sunFXS = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESEffectShader>(shader::FEC_sunFXS, "FEC.esp");
+			const auto FEC_SunFXParticleCount = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESGlobal>(GLOBAL::FEC_SunFXParticleCount, "FEC.esp");
+			const auto sunFXS = RE::TESDataHandler::GetSingleton()->LookupForm<RE::TESEffectShader>(EFFECT_SHADER::FEC_sunFXS, "FEC.esp");
 
 			if (sunFXS && FEC_SunFXParticleCount) {
 				sunFXS->data.particleShaderPersistantParticleCount = FEC_SunFXParticleCount->value / 1.2857f;
@@ -181,7 +181,7 @@ namespace FEC
 		void MiscPatches()
 		{
 			if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler->LookupModByName("DizonaBody.esm")) {
-				dataHandler->LookupForm<RE::TESGlobal>(global::FEC_DizonaInstalled, "FEC.esp")->value = 1.0f;
+				dataHandler->LookupForm<RE::TESGlobal>(GLOBAL::FEC_DizonaInstalled, "FEC.esp")->value = 1.0f;
 			}
 		}
 
@@ -197,17 +197,17 @@ namespace FEC
 	{
 		bool CanDeathEffectsBeAdded(RE::TESNPC* a_npc)
 		{
-			if (a_npc->IsSummonable() || a_npc->HasApplicableKeywordString(keyword::Ghost) || a_npc->IsGhost()) {
+			if (a_npc->IsSummonable() || a_npc->HasApplicableKeywordString(KEYWORD::Ghost) || a_npc->IsGhost()) {
 				return false;
 			}
 
-			if (a_npc->HasApplicableKeywordString(keyword::NPC)) {
+			if (a_npc->HasApplicableKeywordString(KEYWORD::NPC)) {
 				const auto race = a_npc->GetRace();
 				return !(race && (race->IsChildRace() || string::icontains(race->GetFormEditorID(), "Child")));
 			}
 
-			if (a_npc->HasApplicableKeywordString(keyword::Creature) || a_npc->HasApplicableKeywordString(keyword::Animal)) {
-				return !(a_npc->HasApplicableKeywordString(keyword::Dragon) || a_npc->HasApplicableKeywordString(keyword::Daedra));
+			if (a_npc->HasApplicableKeywordString(KEYWORD::Creature) || a_npc->HasApplicableKeywordString(KEYWORD::Animal)) {
+				return !(a_npc->HasApplicableKeywordString(KEYWORD::Dragon) || a_npc->HasApplicableKeywordString(KEYWORD::Daedra));
 			}
 
 			return false;
@@ -231,12 +231,12 @@ namespace FEC
 			std::uint32_t count = 0;
 
 			if (const auto dataHandler = RE::TESDataHandler::GetSingleton(); dataHandler) {
-				auto sunKeyword = RE::TESForm::LookupByEditorID<RE::BGSKeyword>(keyword::Sun);
+				auto sunKeyword = RE::TESForm::LookupByEditorID<RE::BGSKeyword>(KEYWORD::Sun);
 				if (!sunKeyword) {
 					const auto factory = RE::IFormFactory::GetConcreteFormFactoryByType<RE::BGSKeyword>();
 					sunKeyword = factory ? factory->Create() : nullptr;
 					if (sunKeyword) {
-						sunKeyword->SetFormEditorID(keyword::Sun.data());
+						sunKeyword->SetFormEditorID(KEYWORD::Sun.data());
 
 						auto& keywords = dataHandler->GetFormArray<RE::BGSKeyword>();
 						keywords.push_back(sunKeyword);
@@ -251,15 +251,15 @@ namespace FEC
 					using Flag = RE::EffectSetting::EffectSettingData::Flag;
 
 					const auto hitFXS = a_mgef->data.effectShader;
-					bool       isSunEffect = hitFXS && std::ranges::find(shader::sunHitFXS, hitFXS->GetFormID()) != shader::sunHitFXS.end();
+					bool       isSunEffect = hitFXS && std::ranges::find(EFFECT_SHADER::sunHitFXS, hitFXS->GetFormID()) != EFFECT_SHADER::sunHitFXS.end();
 
 					if (!isSunEffect) {
 						const auto hitArt = a_mgef->data.hitEffectArt;
-						isSunEffect = hitArt && std::ranges::find(shader::sunHitArt, hitArt->GetFormID()) != shader::sunHitArt.end();
+						isSunEffect = hitArt && std::ranges::find(EFFECT_SHADER::sunHitArt, hitArt->GetFormID()) != EFFECT_SHADER::sunHitArt.end();
 					}
 					if (!isSunEffect) {
 						const auto castArt = a_mgef->data.castingArt;
-						isSunEffect = castArt && castArt->GetFormID() == shader::DLC1_SunCloakSpellHandFX;
+						isSunEffect = castArt && castArt->GetFormID() == EFFECT_SHADER::DLC1_SunCloakSpellHandFX;
 					}
 
 					return isSunEffect && !(a_mgef->data.flags.none(Flag::kHostile) || a_mgef->data.flags.none(Flag::kDetrimental) || a_mgef->data.castingType == RE::MagicSystem::CastingType::kConstantEffect || a_mgef->data.flags.all(Flag::kNoHitEvent));

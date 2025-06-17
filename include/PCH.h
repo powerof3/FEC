@@ -45,6 +45,25 @@ namespace stl
 		REL::Relocation<std::uintptr_t> vtbl{ F::VTABLE[0] };
 		T::func = vtbl.write_vfunc(idx, T::thunk);
 	}
+
+	template <typename First, typename... T>
+	[[nodiscard]] bool is_in(First&& first, T&&... t)
+	{
+		return ((first == t) || ...);
+	}
+	
+	constexpr inline auto enum_range(auto first, auto last)
+	{
+		auto enum_range =
+			std::views::iota(
+				std::to_underlying(first),
+				std::to_underlying(last)) |
+			std::views::transform([](auto enum_val) {
+				return (decltype(first))enum_val;
+			});
+
+		return enum_range;
+	};
 }
 
 #ifdef SKYRIM_AE

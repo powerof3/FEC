@@ -4,10 +4,14 @@ namespace FEC
 {
 	using Slot = RE::BIPED_MODEL::BipedObjectSlot;
 	using Biped = RE::BIPED_OBJECT;
-	using HeadPart = RE::BGSHeadPart::HeadPartType;
 	using Feature = RE::BSShaderMaterial::Feature;
+	using HeadPartType = RE::BGSHeadPart::HeadPartType;
 	using States = RE::BSGeometry::States;
 	using Texture = RE::BSTextureSet::Texture;
+	using ShaderFlags = RE::BSShaderProperty::EShaderPropertyFlag;
+	using ShaderFlags8 = RE::BSShaderProperty::EShaderPropertyFlag8;
+	using VertexFlags = RE::BSGraphics::Vertex::Flags;
+	using MaterialBase = RE::BSLightingShaderMaterialBase;
 
 	using VM = RE::BSScript::Internal::VirtualMachine;
 	using StackID = RE::VMStackID;
@@ -17,7 +21,7 @@ namespace FEC
 	inline RE::SpellItem* deathEffectsPCAbility;
 	inline RE::SpellItem* deathEffectsAbility;
 
-	namespace color
+	namespace COLOR
 	{
 		inline constexpr RE::Color falmer{ 0x8F7F75 };
 		inline constexpr RE::Color giant{ 0x786f6A };
@@ -25,7 +29,71 @@ namespace FEC
 		inline constexpr RE::Color riekling{ 0x374655 };
 	}
 
-	namespace extra
+	namespace DEATH
+	{
+		enum class MODE
+		{
+			kPermanent,
+			kTemporary
+		};
+
+		struct TYPE
+		{
+			enum PERMANENT : std::uint32_t
+			{
+				kNone = static_cast<std::underlying_type_t<PERMANENT>>(-1),
+				kSun = 0,
+				kAcid,
+				kFire,
+				kFrost,
+				kShock,
+				kDrain,
+				kFireFrost,
+				kFireShock,
+				kDrainFrost,
+				kDrainShock,
+				kFrostShock,
+				kShockFrost
+			};
+
+			enum TEMPORARY : std::uint32_t
+			{
+				kPoison = 0,
+				kFear,
+				kPoisonFear
+			};
+		};
+	}
+
+	namespace EFFECT
+	{
+		enum class TYPE
+		{
+			kNone = static_cast<std::underlying_type_t<TYPE>>(-1),
+			kCharred = 0,
+			kSkeletonized = kCharred,
+			kDrained,
+			kPoisoned,
+			kFrightened = kPoisoned,
+			kAged,
+			kCharredCreature,
+			kFrozenCreature
+		};
+	}
+
+	namespace EFFECT_SHADER
+	{
+		inline constexpr RE::FormID fireFXShader{ 0x0001B212 };
+		inline constexpr RE::FormID DLC1_SunCloakSpellHandFX{ 0x0200A3BD };
+
+		inline constexpr std::array<RE::FormID, 3> FEC_fireFXS{ 0x8E2, 0x877, 0x896 };
+		inline constexpr RE::FormID                FEC_sunFXS{ 0x807 };
+
+		inline constexpr std::array<RE::FormID, 3> sunHitFXS{ 0x02019C9D, 0x0200A3BB, 0x0200A3BC };
+		inline constexpr std::array<RE::FormID, 2> sunHitArt{ 0x0200A3B7, 0x0200A3B8 };
+	}
+
+	namespace EXTRA
 	{
 		inline constexpr auto TOGGLE{ "PO3_TOGGLE"sv };
 		inline constexpr auto SKIN_TINT{ "PO3_SKINTINT"sv };
@@ -37,9 +105,19 @@ namespace FEC
 		inline constexpr auto SKIN_TXST{ "PO3_SKINTXST"sv };
 		inline constexpr auto SHADER{ "PO3_SHADER |"sv };
 		inline constexpr auto ORIG_SHADER{ "PO3_ORIGINALSHADER"sv };
+
+		template <class T, typename D>
+		void Add(RE::NiAVObject* a_root, std::string_view a_type, D a_data)
+		{
+			if (const auto data = a_root->GetExtraData<T>(a_type); !data) {
+				if (const auto newData = T::Create(a_type, a_data); newData) {
+					a_root->AddExtraData(newData);
+				}
+			}
+		}
 	}
 
-	namespace faction
+	namespace FACTION
 	{
 		inline constexpr RE::FormID falmer{ 0x0002997E };
 		inline constexpr RE::FormID giant{ 0x0004359A };
@@ -48,7 +126,7 @@ namespace FEC
 		inline constexpr RE::FormID thirstRiekling{ 0x040208D9 };
 	}
 
-	namespace food
+	namespace FOOD
 	{
 		inline constexpr frozen::map<std::string_view, std::string_view, 13> hunterborn_map{
 			{ "_DS_Food_Raw_Bear"sv, "HB_FireFood_Food_BearSteak"sv },
@@ -83,7 +161,13 @@ namespace FEC
 		};
 	}
 
-	namespace geometry
+	namespace FORMLIST
+	{
+		inline constexpr RE::FormID rawFood{ 0x870 };
+		inline constexpr RE::FormID cookedFood{ 0x871 };
+	}
+
+	namespace GEOMETRY
 	{
 		inline constexpr auto head{ "fec_head"sv };
 		inline constexpr auto headXRay{ "fec_xray_head"sv };
@@ -91,7 +175,7 @@ namespace FEC
 		inline constexpr auto bodyCharred{ "fec_charred_body"sv };
 	}
 
-	namespace global
+	namespace GLOBAL
 	{
 		inline constexpr RE::FormID FEC_FireFXParticleCount{ 0x869 };
 		inline constexpr RE::FormID FEC_SunFXParticleCount{ 0x87C };
@@ -99,7 +183,7 @@ namespace FEC
 		inline constexpr RE::FormID FEC_DizonaInstalled{ 0x8AB };
 	}
 
-	namespace keyword
+	namespace KEYWORD
 	{
 		inline constexpr auto Sun{ "PO3_MagicDamageSun"sv };
 		inline constexpr auto Fire{ "MagicDamageFire"sv };
@@ -116,53 +200,20 @@ namespace FEC
 		inline constexpr auto Daedra{ "ActorTypeDaedra"sv };
 	}
 
-	namespace list
+	namespace PATH
 	{
-		inline constexpr RE::FormID rawFood{ 0x870 };
-		inline constexpr RE::FormID cookedFood{ 0x871 };
+		inline constexpr std::string_view embersXD{ R"(EmbersHD\mx_fireatlas02.dds)"sv };
 	}
 
-	namespace shader
+	namespace SLOT
 	{
-		inline constexpr RE::FormID fireFXShader{ 0x0001B212 };
-		inline constexpr RE::FormID DLC1_SunCloakSpellHandFX{ 0x0200A3BD };
-
-		inline constexpr std::array<RE::FormID, 3> FEC_fireFXS = { 0x8E2, 0x877, 0x896 };
-		inline constexpr RE::FormID                FEC_sunFXS{ 0x807 };
-
-		inline constexpr std::array<RE::FormID, 3> sunHitFXS = { 0x02019C9D, 0x0200A3BB, 0x0200A3BC };
-		inline constexpr std::array<RE::FormID, 2> sunHitArt = { 0x0200A3B7, 0x0200A3B8 };
+		inline constexpr std::array fxSlots{ Slot::kModMouth, Slot::kModChestPrimary, Slot::kModPelvisPrimary, Slot::kModLegRight, Slot::kModChestSecondary, Slot::kModArmRight };
+		inline constexpr std::array fxBiped{ Biped::kModMouth, Biped::kModChestPrimary, Biped::kModPelvisPrimary, Biped::kModLegRight, Biped::kModChestSecondary, Biped::kModArmRight };
+		inline constexpr std::array headparts{ HeadPartType::kMisc, HeadPartType::kFace, HeadPartType::kEyes, HeadPartType::kEyebrows };
+		inline constexpr std::array headSlots{ Biped::kHair, Biped::kLongHair, Biped::kCirclet };
 	}
 
-	namespace slot
-	{
-		inline constexpr std::array fxSlots = { Slot::kModMouth, Slot::kModChestPrimary, Slot::kModPelvisPrimary, Slot::kModLegRight, Slot::kModChestSecondary, Slot::kModArmRight };
-		inline constexpr std::array fxBiped = { Biped::kModMouth, Biped::kModChestPrimary, Biped::kModPelvisPrimary, Biped::kModLegRight, Biped::kModChestSecondary, Biped::kModArmRight };
-		inline constexpr std::array headparts = { HeadPart::kMisc, HeadPart::kFace, HeadPart::kEyes, HeadPart::kEyebrows };
-		inline constexpr std::array headSlots = { Biped::kHair, Biped::kLongHair, Biped::kCirclet };
-	}
-
-	namespace str
-	{
-		inline constexpr auto embersXDPath = R"(EmbersHD\mx_fireatlas02.dds)"sv;
-	}
-
-	namespace texture
-	{
-		inline constexpr std::array types{
-			Texture::kDiffuse,
-			Texture::kNormal,
-			Texture::kEnvironmentMask,
-			Texture::kGlowMap,
-			Texture::kHeight,
-			Texture::kEnvironment,
-			Texture::kMultilayer,
-			Texture::kBacklightMask,
-			Texture::kUnused08
-		};
-	}
-
-	namespace underwear
+	namespace UNDERWEAR
 	{
 		inline constexpr auto male0{ "MaleUnderwear_1"sv };
 		inline constexpr auto male1{ "MaleUnderwear"sv };

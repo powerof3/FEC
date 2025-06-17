@@ -44,7 +44,7 @@ namespace FEC::Serialization
 	};
 
 	class Manager :
-		public ISingleton<Manager>,
+		public REX::Singleton<Manager>,
 		public RE::BSTEventSink<RE::TESFormDeleteEvent>,
 		public RE::BSTEventSink<RE::TESResetEvent>,
 		public RE::BSTEventSink<RE::TESLoadGameEvent>

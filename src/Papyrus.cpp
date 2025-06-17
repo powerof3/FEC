@@ -24,7 +24,7 @@ namespace FEC::Papyrus
 			const auto mgef = a_activeEffect ? a_activeEffect->GetBaseObject() : nullptr;
 			if (mgef && mgef->data.flags.all(FLAG::kHostile) && mgef->data.flags.all(FLAG::kDetrimental)) {
 				if (a_mode == DEATH::MODE::kPermanent) {
-					if (mgef->HasKeyword(keyword::Sun)) {
+					if (mgef->HasKeyword(KEYWORD::Sun)) {
 						a_effectPair = { DEATH::TYPE::PERMANENT::kSun, mgef };  //sun override
 						return true;
 					}
@@ -32,11 +32,11 @@ namespace FEC::Papyrus
                     a_effectPair = { DEATH::TYPE::PERMANENT::kAcid, mgef }; //acid override
                     return true;
                 }*/
-					if (mgef->HasKeyword(keyword::Fire)) {
+					if (mgef->HasKeyword(KEYWORD::Fire)) {
 						a_effectMap[DEATH::TYPE::kFire].emplace_back(mgef, -a_activeEffect->magnitude);  //flipping the magnitude back to +ve
-					} else if (mgef->HasKeyword(keyword::Frost)) {
+					} else if (mgef->HasKeyword(KEYWORD::Frost)) {
 						a_effectMap[DEATH::TYPE::kFrost].emplace_back(mgef, -a_activeEffect->magnitude);
-					} else if (mgef->HasKeyword(keyword::Shock)) {
+					} else if (mgef->HasKeyword(KEYWORD::Shock)) {
 						a_effectMap[DEATH::TYPE::kShock].emplace_back(mgef, -a_activeEffect->magnitude);
 					} else if (mgef->GetArchetype() == Archetype::kAbsorb) {
 						a_effectMap[DEATH::TYPE::kDrain].emplace_back(mgef, -a_activeEffect->magnitude);
@@ -243,70 +243,11 @@ namespace FEC::Papyrus
 			return;
 		}
 
-		bool             result = false;
-		RESET::ResetData resetData{};
-
-		std::tie(result, resetData) = RESET::get_data(root);
-		if (!result) {
-			return;
-		}
-
 		auto type = static_cast<EFFECT::TYPE>(a_type);
 
-		SKSE::GetTaskInterface()->AddTask([a_actor, type, root, resetData]() {
-			auto& [toggleData, skinTintData, hairTintData, alphaSkinData, txstFaceData, headpartAlphaVec, txstVec, txstSkinVec, shaderVec] = resetData;
-
-			switch (type) {
-			case EFFECT::TYPE::kCharred:
-				{
-					RESET::HeadPartAlpha(a_actor, root, headpartAlphaVec);
-					RESET::SkinTint(a_actor, root, skinTintData);
-					RESET::HairTint(a_actor, root, hairTintData);
-					RESET::FaceTXST(a_actor, root, txstFaceData);
-					RESET::SkinTXST(a_actor, root, txstSkinVec);
-				}
-				break;
-			case EFFECT::TYPE::kDrained:
-				{
-					RESET::Toggle(root, toggleData);
-					RESET::SkinTint(a_actor, root, skinTintData);
-					RESET::HairTint(a_actor, root, hairTintData);
-					RESET::FaceTXST(a_actor, root, txstFaceData);
-					RESET::SkinTXST(a_actor, root, txstSkinVec);
-				}
-				break;
-			case EFFECT::TYPE::kPoisoned:
-				{
-					RESET::Toggle(root, toggleData);
-					RESET::SkinAlpha(root, alphaSkinData);
-					RESET::HeadPartAlpha(a_actor, root, headpartAlphaVec);
-					RESET::FaceTXST(a_actor, root, txstFaceData);
-					RESET::SkinTXST(a_actor, root, txstSkinVec);
-
-					if (!a_actor->IsPlayerRef()) {
-						RESET::stop_all_skin_shaders(a_actor);
-					}
-				}
-				break;
-			case EFFECT::TYPE::kAged:
-				{
-					RESET::Toggle(root, toggleData);
-					RESET::SkinAlpha(root, alphaSkinData);
-					RESET::HeadPartAlpha(a_actor, root, headpartAlphaVec);
-
-					if (!a_actor->IsPlayerRef()) {
-						RESET::stop_all_skin_shaders(a_actor);
-					}
-				}
-				break;
-			case EFFECT::TYPE::kCharredCreature:
-				{
-					RESET::MaterialShader(root, shaderVec);
-				}
-				break;
-			default:
-				break;
-			}
+		SKSE::GetTaskInterface()->AddTask([a_actor, type, root]() {
+			ActorResetter resetter(a_actor, root);
+			resetter.ResetEffectsNotOfType(type);
 		});
 	}
 
@@ -487,8 +428,8 @@ namespace FEC::Papyrus
 
 		SKSE::GetTaskInterface()->AddTask([root]() {
 			RE::BSVisit::TraverseScenegraphGeometries(root, [&](RE::BSGeometry* a_geometry) -> RE::BSVisit::BSVisitControl {
-				if (std::ranges::find(underwear::underwears, a_geometry->name.c_str()) != underwear::underwears.end()) {
-					GRAPHICS::SET::Toggle(root, a_geometry, true);
+				if (std::ranges::find(UNDERWEAR::underwears, a_geometry->name.c_str()) != UNDERWEAR::underwears.end()) {
+					GRAPHICS::ActorApplier::ToggleNode(root, a_geometry, true);
 				}
 				return RE::BSVisit::BSVisitControl::kContinue;
 			});

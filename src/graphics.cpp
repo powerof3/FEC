@@ -12,506 +12,530 @@ namespace FEC::GRAPHICS
 
 			a_path = srell::regex_replace(a_path, srell::regex("/+|\\\\+"), "\\");
 			a_path = srell::regex_replace(a_path, srell::regex("^\\\\+"), "");
-			a_path = srell::regex_replace(a_path, srell::regex(R"(.*?[^\s]textures\\|^textures\\)", srell::regex_constants::icase), "");
+			a_path = srell::regex_replace(a_path, srell::regex(R"(.*?[^\s]textures\\|^textures\\)", srell::regex::icase), "");
 		}
 
 		RE::BSShaderTextureSet* create_textureset(char** a_value)
 		{
-			if (const auto textureset = RE::BSShaderTextureSet::Create(); textureset) {
-				for (const auto& type : texture::types) {
+			const auto textureset = RE::BSShaderTextureSet::Create();
+			if (textureset) {
+				for (const auto type : stl::enum_range(Texture::kDiffuse, Texture::kTotal)) {
 					if (!string::is_empty(a_value[type])) {
 						textureset->SetTexturePath(type, a_value[type]);
 					}
 				}
-				return textureset;
 			}
-			return nullptr;
+			return textureset;
 		}
 	}
 
-	namespace SET
+	ShaderDataOutput::ShaderDataOutput(RE::NiStringsExtraData* a_data)
 	{
-		void SkinAlpha(RE::NiAVObject* a_root, float a_alpha, bool a_setData)
-		{
-			a_root->UpdateMaterialAlpha(a_alpha, true);
+		hasData = false;
 
-			if (a_setData) {
-				if (a_alpha == 1.0f) {
-					a_root->RemoveExtraData(extra::SKIN_ALPHA);
-				} else {
-					EXTRA::add_data_if_none<RE::NiBooleanExtraData>(a_root, extra::SKIN_ALPHA, true);
-				}
-			}
-		}
-
-		void SkinAlpha(RE::NiAVObject* a_root, RE::NiAVObject* a_node, float a_alpha, bool a_setData)
-		{
-			a_node->UpdateMaterialAlpha(a_alpha, true);
-
-			if (a_setData) {
-				if (a_alpha == 1.0f) {
-					a_root->RemoveExtraData(extra::SKIN_ALPHA);
-				} else {
-					EXTRA::add_data_if_none<RE::NiBooleanExtraData>(a_root, extra::SKIN_ALPHA, true);
-				}
-			}
-		}
-
-		void Toggle(RE::NiAVObject* a_root, const RE::BSFixedString& a_nodeName, const bool a_toggle, bool a_setData)
-		{
-			if (const auto object = a_root->GetObjectByName(a_nodeName); object) {
-				object->CullNode(a_toggle);
-
-				if (a_setData) {
-					if (const auto data = a_root->GetExtraData<RE::NiStringsExtraData>(extra::TOGGLE); data) {
-						a_toggle ?
-							data->Insert(a_nodeName) :
-							data->Remove(a_nodeName);
-					} else if (a_toggle) {
-						const std::vector<RE::BSFixedString> vec{ a_nodeName };
-						if (const auto newData = RE::NiStringsExtraData::Create(extra::TOGGLE, vec); newData) {
-							a_root->AddExtraData(newData);
-						}
-					}
-				}
-			}
-		}
-
-		void Toggle(RE::NiAVObject* a_root, RE::NiAVObject* a_node, bool a_toggle, bool a_setData)
-		{
-			a_node->CullNode(a_toggle);
-
-			if (a_setData) {
-				if (const auto data = a_root->GetExtraData<RE::NiStringsExtraData>(extra::TOGGLE); data) {
-					a_toggle ?
-						data->Insert(a_node->name) :
-						data->Remove(a_node->name);
-				} else if (a_toggle) {
-					const std::vector<RE::BSFixedString> vec{ a_node->name };
-					if (const auto newData = RE::NiStringsExtraData::Create(extra::TOGGLE, vec); newData) {
-						a_root->AddExtraData(newData);
-					}
-				}
-			}
-		}
-
-		void HeadPartAlpha(RE::Actor* a_actor, RE::NiAVObject* a_root, HeadPart a_type, float a_alpha, bool a_setData)
-		{
-			if (const auto object = a_actor->GetHeadPartObject(a_type); object) {
-				object->UpdateMaterialAlpha(a_alpha, false);
-
-				if (a_setData) {
-					const auto name = "PO3_HEADPART - " + std::to_string(std::to_underlying(a_type));
-					if (a_alpha == 1.0f) {
-						a_root->RemoveExtraData(name);
-					} else {
-						EXTRA::add_data_if_none<RE::NiIntegerExtraData>(a_root, name, std::to_underlying(a_type));
-					}
-				}
+		if (a_data && a_data->value && a_data->size == kShaderTotal) {
+			if (const auto new_txst = TEXTURE::create_textureset(a_data->value); new_txst) {
+				textureSet = new_txst;
+				feature = string::to_num<Feature>(a_data->value[kFeature]);
+				flags = string::to_num<std::uint64_t>(a_data->value[kFlag]);
+				emissiveColor = RE::NiColor(string::to_num<std::uint32_t>(a_data->value[kColor]));
+				emissiveMult = string::to_num<float>(a_data->value[kColorMult]);
+				hasData = true;
 			}
 		}
 	}
 
-	namespace RESET
+	bool ShaderDataOutput::Reset(RE::BSGeometry* a_geometry, RE::BSLightingShaderProperty* a_shaderProp, MaterialBase* a_material) const
 	{
-		struct detail
-		{
-			static std::pair<bool, ShaderData> get_original_shaders(RE::NiStringsExtraData* a_data)
-			{
-				ShaderData shaderData;
-				bool       result = true;
+		if (!hasData) {
+			return false;
+		}
 
-				if (a_data && a_data->value && a_data->size > 0) {
-					auto& [textureSet, feature, flags, emissiveColor, emissiveMult] = shaderData;
-					if (const auto new_txst = TEXTURE::create_textureset(a_data->value); new_txst) {
-						try {
-							textureSet = new_txst;
-							feature = string::to_num<Feature>(a_data->value[9]);
-							flags = string::to_num<std::uint64_t>(a_data->value[10]);
-							emissiveColor = RE::NiColor(
-								string::to_num<std::uint32_t>(a_data->value[11]));
-							emissiveMult = string::to_num<float>(a_data->value[12]);
-						} catch (...) {
-							result = false;
+		if (const auto newMaterial = MaterialBase::CreateMaterial(feature.get()); newMaterial) {
+			newMaterial->CopyBaseMembers(a_material);
+			newMaterial->ClearTextures();
+			newMaterial->OnLoadTextureSet(0, textureSet);
+
+			a_shaderProp->flags = static_cast<RE::BSShaderProperty::EShaderPropertyFlag>(flags);
+			a_shaderProp->lastRenderPassState = std::numeric_limits<std::int32_t>::max();
+			if (a_shaderProp->flags.all(ShaderFlags::kOwnEmit)) {
+				if (!a_shaderProp->emissiveColor) {
+					a_shaderProp->emissiveColor = new RE::NiColor();
+				}
+				*a_shaderProp->emissiveColor = emissiveColor;
+			}
+			a_shaderProp->emissiveMult = emissiveMult;
+
+			a_shaderProp->SetMaterial(newMaterial, true);
+			a_shaderProp->SetupGeometry(a_geometry);
+			a_shaderProp->FinishSetupGeometry(a_geometry);
+
+			newMaterial->~BSLightingShaderMaterialBase();
+			RE::free(newMaterial);
+		}
+
+		return true;
+	}
+
+	void ActorApplier::ToggleNode(RE::NiAVObject* a_root, RE::NiAVObject* a_node, bool a_cull, bool a_setData)
+	{
+		a_node->CullNode(a_cull);
+
+		if (!a_setData) {
+			return;
+		}
+
+		if (const auto data = a_root->GetExtraData<RE::NiStringsExtraData>(EXTRA::TOGGLE); data) {
+			a_cull ?
+				data->Insert(a_node->name) :
+				data->Remove(a_node->name);
+		} else if (a_cull) {
+			std::vector<RE::BSFixedString> vec{ a_node->name };
+			if (const auto newData = RE::NiStringsExtraData::Create(EXTRA::TOGGLE, vec); newData) {
+				a_root->AddExtraData(newData);
+			}
+		}
+	}
+
+	void ActorApplier::ToggleNode(RE::NiAVObject* a_root, const RE::BSFixedString& a_nodeName, bool a_cull, bool a_setData)
+	{
+		ToggleNode(a_root, a_root->GetObjectByName(a_nodeName), a_cull, a_setData);
+	}
+
+	void ActorApplier::HeadPartAlpha(RE::Actor* a_actor, RE::NiAVObject* a_root, HeadPartType a_type, float a_alpha, bool a_setData)
+	{
+		if (const auto object = a_actor->GetHeadPartObject(a_type); object) {
+			object->UpdateMaterialAlpha(a_alpha, false);
+
+			if (!a_setData) {
+				return;
+			}
+
+			const auto name = "PO3_HEADPART - " + std::to_string(std::to_underlying(a_type));
+			if (a_alpha == 1.0f) {
+				a_root->RemoveExtraData(name);
+			} else {
+				EXTRA::Add<RE::NiIntegerExtraData>(a_root, name, std::to_underlying(a_type));
+			}
+		}
+	}
+
+	void ActorApplier::SkinAlpha(RE::NiAVObject* a_root, float a_alpha, bool a_setData)
+	{
+		SkinAlpha(a_root, a_root, a_alpha, a_setData);
+	}
+
+	void ActorApplier::SkinAlpha(RE::NiAVObject* a_root, RE::NiAVObject* a_node, float a_alpha, bool a_setData)
+	{
+		a_node->UpdateMaterialAlpha(a_alpha, true);
+		
+		if (!a_setData) {
+			return;
+		}
+		
+		if (a_alpha == 1.0f) {
+			a_root->RemoveExtraData(EXTRA::SKIN_ALPHA);
+		} else {
+			EXTRA::Add<RE::NiBooleanExtraData>(a_root, EXTRA::SKIN_ALPHA, true);
+		}
+	}
+
+	ActorResetter::ActorResetter(RE::Actor* a_actor, RE::NiAVObject* a_object, const RE::BSFixedString& a_folderName) :
+		actor(a_actor),
+		root(a_object),
+		folderName(a_folderName)
+	{
+		if (!a_object || !a_object->extra || a_object->extraDataSize == 0) {
+			hasData = false;
+			return;
+		}
+
+		std::span<RE::NiExtraData*> span(a_object->extra, a_object->extraDataSize);
+		for (const auto& extraData : span) {
+			if (!extraData) {
+				continue;
+			}
+			if (const auto name = extraData->GetName(); !name.empty()) {
+				switch (string::const_hash(name)) {
+				case string::const_hash(EXTRA::TOGGLE):
+					{
+						toggle = static_cast<RE::NiStringsExtraData*>(extraData);
+						hasData = true;
+					}
+					break;
+				case string::const_hash(EXTRA::SKIN_TINT):
+					{
+						tintSkin = static_cast<RE::NiIntegerExtraData*>(extraData);
+						hasData = true;
+					}
+					break;
+				case string::const_hash(EXTRA::HAIR_TINT):
+					{
+						tintHair = static_cast<RE::NiIntegerExtraData*>(extraData);
+						hasData = true;
+					}
+					break;
+				case string::const_hash(EXTRA::SKIN_ALPHA):
+					{
+						alphaSkin = static_cast<RE::NiBooleanExtraData*>(extraData);
+						hasData = true;
+					}
+					break;
+				case string::const_hash(EXTRA::FACE_TXST):
+					{
+						txstFace = static_cast<RE::NiStringsExtraData*>(extraData);
+						hasData = true;
+					}
+					break;
+				default:
+					if (string::icontains(name, EXTRA::HEADPART)) {
+						alphaHDPT.emplace_back(static_cast<RE::NiIntegerExtraData*>(extraData));
+						hasData = true;
+
+					} else if (string::icontains(name, EXTRA::TXST)) {
+						txst.emplace_back(static_cast<RE::NiStringsExtraData*>(extraData));
+						hasData = true;
+
+					} else if (string::icontains(name, EXTRA::SKIN_TXST)) {
+						txstSkin.emplace_back(static_cast<RE::NiStringsExtraData*>(extraData));
+						hasData = true;
+
+					} else if (string::icontains(name, EXTRA::SHADER)) {
+						shaders.emplace_back(static_cast<RE::NiStringsExtraData*>(extraData));
+						hasData = true;
+					}
+					break;
+				}
+			}
+		}
+
+		if (!folderName.empty()) {
+			TEXTURE::sanitize_path(folderName);
+		}
+	}
+
+	bool ActorResetter::ResetEffectsNotOfType(EFFECT::TYPE a_effectType) const
+	{
+		if (!actor || !root || !hasData) {
+			return false;
+		}
+
+		switch (a_effectType) {
+		case EFFECT::TYPE::kCharred:
+			{
+				ResetHeadPartAlpha();
+				ResetSkinTint();
+				ResetHairTint();
+				ResetFaceTXST();
+				ResetSkinTXST();
+			}
+			break;
+		case EFFECT::TYPE::kDrained:
+			{
+				ResetToggle();
+				ResetSkinTint();
+				ResetHairTint();
+				ResetFaceTXST();
+				ResetSkinTXST();
+			}
+			break;
+		case EFFECT::TYPE::kPoisoned:
+			{
+				ResetToggle();
+				ResetSkinAlpha();
+				ResetHeadPartAlpha();
+				ResetFaceTXST();
+				ResetSkinTXST();
+
+				if (!actor->IsPlayerRef()) {
+					stop_all_skin_shaders(actor.get());
+				}
+			}
+			break;
+		case EFFECT::TYPE::kAged:
+			{
+				ResetToggle();
+				ResetSkinAlpha();
+				ResetHeadPartAlpha();
+
+				if (!actor->IsPlayerRef()) {
+					stop_all_skin_shaders(actor.get());
+				}
+			}
+			break;
+		case EFFECT::TYPE::kCharredCreature:
+			{
+				ResetMaterialShader();
+			}
+			break;
+		default:
+			break;
+		}
+
+		return true;
+	}
+
+	void ActorResetter::ResetToggle() const
+	{
+		if (toggle && toggle->value && toggle->size > 0) {
+			std::span<char*> span(toggle->value, toggle->size);
+			for (const auto& string : span) {
+				if (!string::is_empty(string)) {
+					if (const auto object = root->GetObjectByName(string); object) {
+						object->CullNode(false);
+					}
+				}
+			}
+			root->RemoveExtraData(toggle->GetName());
+		}
+	}
+
+	void ActorResetter::ResetSkinTint() const
+	{
+		if (tintSkin) {
+			const auto actorbase = actor->GetActorBase();
+			const auto facePart = actorbase ? actorbase->GetCurrentHeadPartByType(HeadPartType::kFace) : nullptr;
+			const auto faceNode = actor->GetFaceNodeSkinned();
+
+			if (faceNode && facePart) {
+				if (const auto faceGen = RE::BSFaceGenManager::GetSingleton(); faceGen) {
+					faceGen->PrepareHeadPartForShaders(faceNode, facePart, actorbase);
+				}
+				root->UpdateBodyTint(actorbase->bodyTintColor);
+				root->RemoveExtraData(tintSkin->GetName());
+			}
+		}
+	}
+
+	void ActorResetter::ResetHairTint() const
+	{
+		if (tintHair) {
+			const auto actorBase = actor->GetActorBase();
+			const auto headData = actorBase ? actorBase->headRelatedData : nullptr;
+			const auto colorForm = headData ? headData->hairColor : nullptr;
+
+			if (colorForm) {
+				root->UpdateHairColor(colorForm->color);
+
+				if (const auto& biped = actor->GetCurrentBiped(); biped) {
+					for (auto& slot : SLOT::headSlots) {
+						const auto& node = biped->objects[slot].partClone;
+						if (node && node->HasShaderType(RE::BSShaderMaterial::Feature::kHairTint)) {
+							node->UpdateHairColor(colorForm->color);
 						}
-					} else {
-						result = false;
 					}
 				}
 
-				return { result, shaderData };
+				root->RemoveExtraData(tintHair->GetName());
 			}
+		}
+	}
 
-			static void reset_shaderdata(RE::NiAVObject* a_object, std::vector<RE::BSFixedString>& a_geometries)
-			{
-				using Flag = RE::BSShaderProperty::EShaderPropertyFlag;
+	void ActorResetter::ResetSkinAlpha() const
+	{
+		if (alphaSkin) {
+			root->UpdateMaterialAlpha(1.0f, true);
+			root->RemoveExtraData(alphaSkin->GetName());
+		}
+	}
 
-				RE::BSVisit::TraverseScenegraphGeometries(a_object, [&](RE::BSGeometry* a_geometry) -> RE::BSVisit::BSVisitControl {
-					if (std::ranges::find(a_geometries, a_geometry->name) == a_geometries.end()) {
-						return RE::BSVisit::BSVisitControl::kContinue;
+	void ActorResetter::ResetHeadPartAlpha() const
+	{
+		if (alphaHDPT.empty()) {
+			return;
+		}
+
+		for (auto& data : alphaHDPT) {
+			if (data) {
+				if (const auto object = actor->GetHeadPartObject(static_cast<HeadPartType>(data->value)); object) {
+					object->UpdateMaterialAlpha(1.0f, false);
+					root->RemoveExtraData(data->GetName());
+				}
+			}
+		}
+	}
+
+	void ActorResetter::ResetFaceTXST() const
+	{
+		if (txstFace && txstFace->value) {
+			const auto textureset = TEXTURE::create_textureset(txstFace->value);
+			const auto faceObject = actor->GetHeadPartObject(HeadPartType::kFace);
+			if (textureset && faceObject) {
+				reset_textureset(faceObject, textureset, true);
+				root->RemoveExtraData(txstFace->GetName());
+			}
+		}
+	}
+
+	void ActorResetter::ResetArmorTXST() const
+	{
+		if (txst.empty() || folderName.empty()) {
+			return;
+		}
+
+		for (auto& data : txst) {
+			if (data && data->value && data->size > 0) {
+				RE::FormID formID = 0;
+				if (std::string armorID{ data->value[data->size - 1] }; !armorID.empty()) {
+					try {
+						formID = string::to_num<RE::FormID>(armorID, true);
+					} catch (...) {
+						continue;
 					}
+				}
+				auto armor = actor->GetWornArmor(formID);
+				if (!armor) {
+					armor = actor->GetSkin();
+				}
+				if (armor) {
+					const auto textureset = TEXTURE::create_textureset(data->value);
+					const auto arma = armor->GetArmorAddon(actor->GetRace());
+					if (textureset && arma) {
+						actor->VisitArmorAddon(armor, arma, [&](bool, RE::NiAVObject& a_obj) -> bool {
+							reset_textureset(&a_obj, textureset, false, folderName);
+							return true;
+						});
+						root->RemoveExtraData(data->GetName());
+					}
+				}
+			}
+		}
+	}
 
-					const auto effect = a_geometry->properties[States::kEffect];
-					const auto lightingShader = netimmerse_cast<RE::BSLightingShaderProperty*>(effect.get());
-					if (lightingShader) {
-						const auto originalData = lightingShader->GetExtraData<RE::NiStringsExtraData>(extra::ORIG_SHADER);
-						if (!originalData) {
-							return RE::BSVisit::BSVisitControl::kContinue;
-						}
+	void ActorResetter::ResetSkinTXST() const
+	{
+		if (txstSkin.empty()) {
+			return;
+		}
 
-						const auto material = static_cast<RE::BSLightingShaderMaterialBase*>(lightingShader->material);
-						if (material) {
-							auto [result, shaderData] = get_original_shaders(originalData);
-							if (!result) {
-								logger::warn("unable to get original shader values for {}", a_geometry->name.data());
+		for (auto& data : txstSkin) {
+			if (data && data->value && data->size > 0) {
+				auto slot = Slot::kNone;
+				if (std::string slotMaskstr{ data->value[data->size - 1] }; !slotMaskstr.empty()) {
+					try {
+						slot = string::to_num<Slot>(slotMaskstr);
+					} catch (...) {
+						continue;
+					}
+				}
+				if (const auto skinArmor = actor->GetSkin(slot); skinArmor) {
+					const auto textureset = TEXTURE::create_textureset(data->value);
+					const auto skinArma = skinArmor->GetArmorAddonByMask(actor->GetRace(), slot);
+					if (textureset && skinArma) {
+						actor->VisitArmorAddon(skinArmor, skinArma, [&](bool, RE::NiAVObject& a_obj) -> bool {
+							reset_textureset(&a_obj, textureset, true);
+							return true;
+						});
+						root->RemoveExtraData(data->GetName());
+					}
+				}
+			}
+		}
+	}
+
+	void ActorResetter::ResetMaterialShader() const
+	{
+		if (shaders.empty()) {
+			return;
+		}
+
+		for (auto& data : shaders) {
+			if (data && data->value && data->size > 0) {
+				std::vector<RE::BSFixedString> vec({ data->value, data->value + data->size });
+				reset_shaderdata(root.get(), vec);
+				root->RemoveExtraData(data->GetName());
+			}
+		}
+	}
+
+	void ActorResetter::stop_all_skin_shaders(RE::TESObjectREFR* a_ref)
+	{
+		using Flags = RE::EffectShaderData::Flags;
+
+		if (const auto processLists = RE::ProcessLists::GetSingleton(); processLists) {
+			const auto handle = a_ref->CreateRefHandle();
+			processLists->ForEachShaderEffect([&](RE::ShaderReferenceEffect* a_shaderEffect) {
+				if (a_shaderEffect->target == handle) {
+					if (const auto effectData = a_shaderEffect->effectData; effectData &&
+																			effectData->data.flags.all(Flags::kSkinOnly) &&
+																			!effectData->holesTexture.textureName.empty()) {
+						a_shaderEffect->finished = true;
+					}
+				}
+				return RE::BSContainer::ForEachResult::kContinue;
+			});
+		}
+	}
+
+	void ActorResetter::reset_textureset(RE::NiAVObject* a_object, RE::BSShaderTextureSet* a_txst, bool a_doOnlySkin, const std::string& a_folder)
+	{
+		RE::BSVisit::TraverseScenegraphGeometries(a_object, [&](RE::BSGeometry* a_geometry) -> RE::BSVisit::BSVisitControl {
+			const auto& effect = a_geometry->properties[States::kEffect];
+			const auto  lightingShader = netimmerse_cast<RE::BSLightingShaderProperty*>(effect.get());
+			if (lightingShader) {
+				const auto material = static_cast<MaterialBase*>(lightingShader->material);
+				if (material) {
+					if (!a_doOnlySkin) {
+						if (const auto textureSet = material->textureSet; textureSet && !a_folder.empty()) {
+							std::string sourcePath{ textureSet->GetTexturePath(Texture::kDiffuse) };
+							if (TEXTURE::sanitize_path(sourcePath); !sourcePath.contains(a_folder)) {
 								return RE::BSVisit::BSVisitControl::kContinue;
 							}
-
-							auto& [textureSet, feature, flags, emissiveColor, emissiveMult] = shaderData;
-
-							if (const auto newMaterial = RE::BSLightingShaderMaterialBase::CreateMaterial(feature); newMaterial) {
-								newMaterial->CopyBaseMembers(material);
-								newMaterial->ClearTextures();
-								newMaterial->OnLoadTextureSet(0, textureSet);
-
-								lightingShader->flags = static_cast<RE::BSShaderProperty::EShaderPropertyFlag>(flags);
-								lightingShader->lastRenderPassState = std::numeric_limits<std::int32_t>::max();
-								if (lightingShader->flags.all(Flag::kOwnEmit)) {
-									if (!lightingShader->emissiveColor) {
-										lightingShader->emissiveColor = new RE::NiColor();
-									}
-									lightingShader->emissiveColor->red = emissiveColor.red;
-									lightingShader->emissiveColor->green = emissiveColor.green;
-									lightingShader->emissiveColor->blue = emissiveColor.blue;
-								}
-								lightingShader->emissiveMult = emissiveMult;
-
-								lightingShader->SetMaterial(newMaterial, true);
-								lightingShader->SetupGeometry(a_geometry);
-								lightingShader->FinishSetupGeometry(a_geometry);
-
-								newMaterial->~BSLightingShaderMaterialBase();
-								RE::free(newMaterial);
-
-								lightingShader->RemoveExtraData(originalData->GetName());
-								a_geometry->RemoveExtraData(originalData->GetName());
-							}
+						}
+					} else {
+						if (const auto feature = material->GetFeature(); feature != Feature::kFaceGenRGBTint && feature != Feature::kFaceGen) {
+							return RE::BSVisit::BSVisitControl::kContinue;
 						}
 					}
 
+					if (const auto newMaterial = static_cast<MaterialBase*>(material->Create()); newMaterial) {
+						newMaterial->CopyMembers(material);
+
+						newMaterial->ClearTextures();
+						newMaterial->OnLoadTextureSet(0, a_txst);
+
+						lightingShader->SetMaterial(newMaterial, true);
+
+						lightingShader->SetupGeometry(a_geometry);
+						lightingShader->FinishSetupGeometry(a_geometry);
+
+						newMaterial->~BSLightingShaderMaterialBase();
+						RE::free(newMaterial);
+					}
+				}
+			}
+			return RE::BSVisit::BSVisitControl::kContinue;
+		});
+	}
+
+	void ActorResetter::reset_shaderdata(RE::NiAVObject* a_object, std::vector<RE::BSFixedString>& a_geometries)
+	{
+		RE::BSVisit::TraverseScenegraphGeometries(a_object, [&](RE::BSGeometry* a_geometry) -> RE::BSVisit::BSVisitControl {
+			if (std::ranges::find(a_geometries, a_geometry->name) == a_geometries.end()) {
+				return RE::BSVisit::BSVisitControl::kContinue;
+			}
+
+			const auto& effect = a_geometry->properties[States::kEffect];
+			const auto  lightingShader = netimmerse_cast<RE::BSLightingShaderProperty*>(effect.get());
+
+			if (lightingShader) {
+				const auto originalData = lightingShader->GetExtraData<RE::NiStringsExtraData>(EXTRA::ORIG_SHADER);
+				if (!originalData) {
 					return RE::BSVisit::BSVisitControl::kContinue;
-				});
-			}
-
-			static void reset_textureset(RE::NiAVObject* a_object, RE::BSShaderTextureSet* a_txst, bool a_doOnlySkin, const std::string& a_folder)
-			{
-				using Texture = RE::BSTextureSet::Texture;
-
-				RE::BSVisit::TraverseScenegraphGeometries(a_object, [&](RE::BSGeometry* a_geometry) -> RE::BSVisit::BSVisitControl {
-					const auto effect = a_geometry->properties[States::kEffect];
-					const auto lightingShader = netimmerse_cast<RE::BSLightingShaderProperty*>(effect.get());
-					if (lightingShader) {
-						const auto material = static_cast<RE::BSLightingShaderMaterialBase*>(lightingShader->material);
-						if (material) {
-							if (!a_doOnlySkin) {
-								if (const auto textureSet = material->textureSet; textureSet && !a_folder.empty()) {
-									std::string sourcePath{ textureSet->GetTexturePath(Texture::kDiffuse) };
-									if (TEXTURE::sanitize_path(sourcePath); sourcePath.find(a_folder) == std::string::npos) {
-										return RE::BSVisit::BSVisitControl::kContinue;
-									}
-								}
-							} else {
-								if (const auto feature = material->GetFeature(); feature != Feature::kFaceGenRGBTint && feature != Feature::kFaceGen) {
-									return RE::BSVisit::BSVisitControl::kContinue;
-								}
-							}
-
-							if (const auto newMaterial = static_cast<RE::BSLightingShaderMaterialBase*>(material->Create()); newMaterial) {
-								newMaterial->CopyMembers(material);
-
-								newMaterial->ClearTextures();
-								newMaterial->OnLoadTextureSet(0, a_txst);
-
-								lightingShader->SetMaterial(newMaterial, true);
-
-								lightingShader->SetupGeometry(a_geometry);
-								lightingShader->FinishSetupGeometry(a_geometry);
-
-								newMaterial->~BSLightingShaderMaterialBase();
-								RE::free(newMaterial);
-							}
-						}
-					}
-					return RE::BSVisit::BSVisitControl::kContinue;
-				});
-			}
-		};
-
-		void stop_all_skin_shaders(RE::TESObjectREFR* a_ref)
-		{
-			using Flags = RE::EffectShaderData::Flags;
-
-			if (const auto processLists = RE::ProcessLists::GetSingleton(); processLists) {
-				const auto handle = a_ref->CreateRefHandle();
-				processLists->ForEachShaderEffect([&](RE::ShaderReferenceEffect* a_shaderEffect) {
-					if (a_shaderEffect->target == handle) {
-						if (const auto effectData = a_shaderEffect->effectData; effectData &&
-																				effectData->data.flags.all(Flags::kSkinOnly) &&
-																				!effectData->holesTexture.textureName.empty()) {
-							a_shaderEffect->finished = true;
-						}
-					}
-					return RE::BSContainer::ForEachResult::kContinue;
-				});
-			}
-		}
-
-		std::pair<bool, ResetData> get_data(RE::NiAVObject* a_object)
-		{
-			ResetData resetData;
-			bool      success = false;
-
-			if (!a_object->extra || a_object->extraDataSize == 0) {
-				return { success, resetData };
-			}
-
-			auto& [toggle, tintSkin, tintHair, alphaSkin, TXSTFace, alphaHDPT, TXST, TXSTSkin, shader] = resetData;
-
-			const std::span span(a_object->extra, a_object->extraDataSize);
-			for (const auto& extraData : span) {
-				if (!extraData) {
-					continue;
 				}
-				if (const auto name = extraData->GetName(); !name.empty()) {
-					switch (string::const_hash(name)) {
-					case string::const_hash(extra::TOGGLE):
-						{
-							toggle = static_cast<RE::NiStringsExtraData*>(extraData);
-							success = true;
-						}
-						break;
-					case string::const_hash(extra::SKIN_TINT):
-						{
-							tintSkin = static_cast<RE::NiIntegerExtraData*>(extraData);
-							success = true;
-						}
-						break;
-					case string::const_hash(extra::HAIR_TINT):
-						{
-							tintHair = static_cast<RE::NiIntegerExtraData*>(extraData);
-							success = true;
-						}
-						break;
-					case string::const_hash(extra::SKIN_ALPHA):
-						{
-							alphaSkin = static_cast<RE::NiBooleanExtraData*>(extraData);
-							success = true;
-						}
-						break;
-					case string::const_hash(extra::FACE_TXST):
-						{
-							TXSTFace = static_cast<RE::NiStringsExtraData*>(extraData);
-							success = true;
-						}
-						break;
-					default:
-						if (string::icontains(name, extra::HEADPART)) {
-							alphaHDPT.emplace_back(static_cast<RE::NiIntegerExtraData*>(extraData));
-							success = true;
 
-						} else if (string::icontains(name, extra::TXST)) {
-							TXST.emplace_back(static_cast<RE::NiStringsExtraData*>(extraData));
-							success = true;
-
-						} else if (string::icontains(name, extra::SKIN_TXST)) {
-							TXSTSkin.emplace_back(static_cast<RE::NiStringsExtraData*>(extraData));
-							success = true;
-
-						} else if (string::icontains(name, extra::SHADER)) {
-							shader.emplace_back(static_cast<RE::NiStringsExtraData*>(extraData));
-							success = true;
-						}
-						break;
+				if (const auto material = static_cast<MaterialBase*>(lightingShader->material)) {
+					auto shaderData = ShaderDataOutput(originalData);
+					if (!shaderData.Reset(a_geometry, lightingShader, material)) {
+						logger::warn("unable to get original shader values for {}", a_geometry->name.c_str());
 					}
+					lightingShader->RemoveExtraData(originalData->GetName());
+					a_geometry->RemoveExtraData(originalData->GetName());
 				}
 			}
 
-			return { success, resetData };
-		}
-
-		void Toggle(RE::NiAVObject* a_root, RE::NiStringsExtraData* a_data)
-		{
-			if (a_data && a_data->value && a_data->size > 0) {
-				std::span<char*> span(a_data->value, a_data->size);
-				for (const auto& string : span) {
-					if (!string::is_empty(string)) {
-						if (const auto object = a_root->GetObjectByName(string); object) {
-							object->CullNode(false);
-						}
-					}
-				}
-				a_root->RemoveExtraData(a_data->GetName());
-			}
-		}
-
-		void SkinTint(RE::Actor* a_actor, RE::NiAVObject* a_root, RE::NiIntegerExtraData* a_data)
-		{
-			if (a_data) {
-				const auto actorbase = a_actor->GetActorBase();
-				const auto facePart = actorbase ? actorbase->GetCurrentHeadPartByType(HeadPart::kFace) : nullptr;
-				const auto faceNode = a_actor->GetFaceNodeSkinned();
-
-				if (faceNode && facePart) {
-					if (const auto faceGen = RE::BSFaceGenManager::GetSingleton(); faceGen) {
-						faceGen->PrepareHeadPartForShaders(faceNode, facePart, actorbase);
-					}
-					a_root->UpdateBodyTint(actorbase->bodyTintColor);
-					a_root->RemoveExtraData(a_data->GetName());
-				}
-			}
-		}
-
-		void HairTint(RE::Actor* a_actor, RE::NiAVObject* a_root, RE::NiIntegerExtraData* a_data)
-		{
-			if (a_data) {
-				const auto actorBase = a_actor->GetActorBase();
-				const auto headData = actorBase ? actorBase->headRelatedData : nullptr;
-				const auto colorForm = headData ? headData->hairColor : nullptr;
-
-				if (colorForm) {
-					a_root->UpdateHairColor(colorForm->color);
-
-					if (const auto& biped = a_actor->GetCurrentBiped(); biped) {
-						for (auto& slot : slot::headSlots) {
-							if (const auto node = biped->objects[slot].partClone; node && node->HasShaderType(RE::BSShaderMaterial::Feature::kHairTint)) {
-								node->UpdateHairColor(colorForm->color);
-							}
-						}
-					}
-
-					a_root->RemoveExtraData(a_data->GetName());
-				}
-			}
-		}
-
-		void SkinAlpha(RE::NiAVObject* a_root, RE::NiBooleanExtraData* a_data)
-		{
-			if (a_data) {
-				a_root->UpdateMaterialAlpha(1.0f, true);
-				a_root->RemoveExtraData(a_data->GetName());
-			}
-		}
-
-		void HeadPartAlpha(RE::Actor* a_actor, RE::NiAVObject* a_root, const std::vector<RE::NiIntegerExtraData*>& a_data)
-		{
-			for (auto& data : a_data) {
-				if (data) {
-					if (const auto object = a_actor->GetHeadPartObject(static_cast<HeadPart>(data->value)); object) {
-						object->UpdateMaterialAlpha(1.0f, false);
-						a_root->RemoveExtraData(data->GetName());
-					}
-				}
-			}
-		}
-
-		void FaceTXST(RE::Actor* a_actor, RE::NiAVObject* a_root, RE::NiStringsExtraData* a_data)
-		{
-			if (a_data && a_data->value) {
-				const auto textureset = TEXTURE::create_textureset(a_data->value);
-				const auto faceObject = a_actor->GetHeadPartObject(HeadPart::kFace);
-				if (textureset && faceObject) {
-					detail::reset_textureset(faceObject, textureset, true, std::string());
-					a_root->RemoveExtraData(a_data->GetName());
-				}
-			}
-		}
-
-		void ArmorTXST(RE::Actor* a_actor, RE::NiAVObject* a_root, const RE::BSFixedString& a_folderName, const std::vector<RE::NiStringsExtraData*>& a_vec)
-		{
-			if (a_vec.empty()) {
-				return;
-			}
-
-			std::string folder{ a_folderName };
-			TEXTURE::sanitize_path(folder);
-
-			for (auto& data : a_vec) {
-				if (data && data->value && data->size > 0) {
-					RE::FormID formID = 0;
-					if (std::string armorID{ data->value[data->size - 1] }; !armorID.empty()) {
-						try {
-							formID = string::to_num<RE::FormID>(armorID, true);
-						} catch (...) {
-							continue;
-						}
-					}
-					auto armor = a_actor->GetWornArmor(formID);
-					if (!armor) {
-						armor = a_actor->GetSkin();
-					}
-					if (armor) {
-						const auto textureset = TEXTURE::create_textureset(data->value);
-						const auto arma = armor->GetArmorAddon(a_actor->GetRace());
-						if (textureset && arma) {
-							a_actor->VisitArmorAddon(armor, arma, [&](bool, RE::NiAVObject& a_obj) -> bool {
-								detail::reset_textureset(&a_obj, textureset, false, folder);
-								return true;
-							});
-							a_root->RemoveExtraData(data->GetName());
-						}
-					}
-				}
-			}
-		}
-
-		void SkinTXST(RE::Actor* a_actor, RE::NiAVObject* a_root, const std::vector<RE::NiStringsExtraData*>& a_vec)
-		{
-			using Slot = RE::BGSBipedObjectForm::BipedObjectSlot;
-
-			if (a_vec.empty()) {
-				return;
-			}
-
-			for (auto& data : a_vec) {
-				if (data && data->value && data->size > 0) {
-					auto slot = Slot::kNone;
-					if (std::string slotMaskstr{ data->value[data->size - 1] }; !slotMaskstr.empty()) {
-						try {
-							slot = string::to_num<Slot>(slotMaskstr);
-						} catch (...) {
-							continue;
-						}
-					}
-					if (const auto skinArmor = a_actor->GetSkin(slot); skinArmor) {
-						const auto textureset = TEXTURE::create_textureset(data->value);
-						const auto skinArma = skinArmor->GetArmorAddonByMask(a_actor->GetRace(), slot);
-						if (textureset && skinArma) {
-							a_actor->VisitArmorAddon(skinArmor, skinArma, [&](bool, RE::NiAVObject& a_obj) -> bool {
-								detail::reset_textureset(&a_obj, textureset, true, std::string());
-								return true;
-							});
-							a_root->RemoveExtraData(data->GetName());
-						}
-					}
-				}
-			}
-		}
-
-		void MaterialShader(RE::NiAVObject* a_root, const std::vector<RE::NiStringsExtraData*>& a_vec)
-		{
-			if (a_vec.empty()) {
-				return;
-			}
-
-			for (auto& data : a_vec) {
-				if (data && data->value && data->size > 0) {
-					std::vector<RE::BSFixedString> vec({ data->value, data->value + data->size });
-					detail::reset_shaderdata(a_root, vec);
-
-					a_root->RemoveExtraData(data->GetName());
-				}
-			}
-		}
+			return RE::BSVisit::BSVisitControl::kContinue;
+		});
 	}
 
 	namespace ARMOR
@@ -525,7 +549,7 @@ namespace FEC::GRAPHICS
 		{
 			static bool has_FEC_addon(RE::BipedAnim* a_biped)
 			{
-				return std::ranges::any_of(slot::fxBiped, [&](const auto& bipedSlot) {
+				return std::ranges::any_of(SLOT::fxBiped, [&](const auto& bipedSlot) {
 					const auto addon = a_biped->objects[bipedSlot].addon;
 					return addon && mod->IsFormInMod(addon->formID);
 				});
@@ -537,7 +561,7 @@ namespace FEC::GRAPHICS
 					const auto ref = a_biped->actorRef.get();
 					const auto actor = ref ? ref->As<RE::Actor>() : nullptr;
 
-					if (!actor || actor->IsPlayerRef() || !actor->HasKeywordString("ActorTypeNPC"sv)) {
+					if (!actor || actor->IsPlayerRef() || !actor->HasKeywordString(KEYWORD::NPC)) {
 						return;
 					}
 
@@ -552,17 +576,17 @@ namespace FEC::GRAPHICS
 
 						if (permType && *permType != PermEffect::kNone) {
 							if (*permType == PermEffect::kCharred || *permType == PermEffect::kSkeletonized) {
-								if (const auto& name = a_object->name; !name.empty() && std::ranges::find(underwear::underwears, name.c_str()) != underwear::underwears.end()) {
-									SET::Toggle(root, a_object, true);
+								if (const auto& name = a_object->name; !name.empty() && std::ranges::find(UNDERWEAR::underwears, name.c_str()) != UNDERWEAR::underwears.end()) {
+									ActorApplier::ToggleNode(root, a_object, true);
 								}
 							}
 							if (a_object->HasShaderType(Feature::kFaceGenRGBTint)) {
-								SET::SkinAlpha(root, a_object, 0.0f);
+								ActorApplier::SkinAlpha(root, a_object, 0.0f);
 							}
 						} else if (tempType && !tempType->empty()) {
 							if (const auto name = a_object->name; !name.empty()) {
 								if (a_object->HasShaderType(Feature::kFaceGenRGBTint) && tempType->contains(TempEffect::kXRayed)) {
-									SET::SkinAlpha(root, a_object, 0.5f);
+									ActorApplier::SkinAlpha(root, a_object, 0.5f);
 								}
 							}
 						}
@@ -635,7 +659,7 @@ namespace FEC::GRAPHICS
 				{
 					func(a_npc, a_actor, a_node);
 
-					if (a_actor && !a_actor->IsPlayerRef() && a_actor->HasKeywordString("ActorTypeNPC"sv)) {
+					if (a_actor && !a_actor->IsPlayerRef() && a_actor->HasKeywordString(KEYWORD::NPC)) {
 						const auto permType = Manager::GetSingleton()->permanentEffectMap.find(a_actor->GetFormID());
 						if (!permType || *permType == PermEffect::kNone) {
 							return;
@@ -647,14 +671,14 @@ namespace FEC::GRAPHICS
 
 							if (addon && mod->IsFormInMod(addon->formID)) {
 								if (*permType == PermEffect::kCharred || *permType == PermEffect::kSkeletonized) {
-									SET::Toggle(root, RE::FixedStrings::GetSingleton()->bsFaceGenNiNodeSkinned, true);
+									ActorApplier::ToggleNode(root, RE::FixedStrings::GetSingleton()->bsFaceGenNiNodeSkinned, true);
 								} else if (*permType == PermEffect::kDrained) {
-									for (auto& headpart : slot::headparts) {
-										SET::HeadPartAlpha(a_actor, root, headpart, 0.0f);
+									for (auto& headpart : SLOT::headparts) {
+										ActorApplier::HeadPartAlpha(a_actor, root, headpart, 0.0f);
 									}
 								} else {
 									if (a_actor->HasKeywordString("IsBeastRace"sv)) {
-										SET::HeadPartAlpha(a_actor, root, HeadPart::kMisc, 0.0f);
+										ActorApplier::HeadPartAlpha(a_actor, root, HeadPartType::kMisc, 0.0f);
 									}
 								}
 							}
@@ -691,7 +715,7 @@ namespace FEC::GRAPHICS
 						const auto user = a_node->GetUserData();
 						const auto actor = user ? user->As<RE::Actor>() : nullptr;
 
-						if (actor && !actor->IsPlayerRef() && actor->HasKeywordString(keyword::NPC)) {
+						if (actor && !actor->IsPlayerRef() && actor->HasKeywordString(KEYWORD::NPC)) {
 							const auto root = actor->Get3D(false);
 							if (!root) {
 								return;
@@ -708,25 +732,25 @@ namespace FEC::GRAPHICS
 								switch (*val) {
 								case 0:
 									{
-										SET::Toggle(root, RE::FixedStrings::GetSingleton()->bsFaceGenNiNodeSkinned, false, false);
-										for (auto& headpart : slot::headparts) {
-											SET::HeadPartAlpha(actor, root, headpart, 1.0f, false);
+										ActorApplier::ToggleNode(root, RE::FixedStrings::GetSingleton()->bsFaceGenNiNodeSkinned, false, false);
+										for (auto& headpart : SLOT::headparts) {
+											ActorApplier::HeadPartAlpha(actor, root, headpart, 1.0f, false);
 										}
 										result = RE::BSVisit::BSVisitControl::kStop;
 									}
 									break;
 								case 1:
 									{
-										SET::SkinAlpha(root, 1.0f, false);
+										ActorApplier::SkinAlpha(root, 1.0f, false);
 										result = RE::BSVisit::BSVisitControl::kStop;
 									}
 									break;
 								case 2:
 									{
-										for (auto& name : underwear::underwears) {
-											SET::Toggle(root, name, false, false);
+										for (auto& name : UNDERWEAR::underwears) {
+											ActorApplier::ToggleNode(root, name, false, false);
 										}
-										SET::SkinAlpha(root, 1.0f, false);
+										ActorApplier::SkinAlpha(root, 1.0f, false);
 										result = RE::BSVisit::BSVisitControl::kStop;
 									}
 									break;

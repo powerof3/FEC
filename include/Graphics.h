@@ -2,64 +2,86 @@
 
 namespace FEC::GRAPHICS
 {
-	namespace EXTRA
-	{
-		template <class T, typename D>
-		void add_data_if_none(RE::NiAVObject* a_root, std::string_view a_type, D a_data)
-		{
-			if (const auto data = a_root->GetExtraData<T>(a_type); !data) {
-				if (const auto newData = T::Create(a_type, a_data)) {
-					a_root->AddExtraData(newData);
-				}
-			}
-		}
-	}
-
 	namespace TEXTURE
 	{
 		void                    sanitize_path(std::string& a_path);
 		RE::BSShaderTextureSet* create_textureset(char** a_value);
 	}
 
-	namespace SET
+	struct ShaderDataOutput
 	{
-		void SkinAlpha(RE::NiAVObject* a_root, float a_alpha, bool a_setData = true);
-		void SkinAlpha(RE::NiAVObject* a_root, RE::NiAVObject* a_node, float a_alpha, bool a_setData = true);
+		enum TYPE
+		{
+			kDiffuse = 0,
+			kTextureTotal = 9,
 
-		void Toggle(RE::NiAVObject* a_root, const RE::BSFixedString& a_nodeName, bool a_toggle, bool a_setData = true);
-		void Toggle(RE::NiAVObject* a_root, RE::NiAVObject* a_node, bool a_toggle, bool a_setData = true);
+			kFeature = kTextureTotal,
+			kFlag,
+			kColor,
+			kColorMult,
 
-		void HeadPartAlpha(RE::Actor* a_actor, RE::NiAVObject* a_root, HeadPart a_type, float a_alpha, bool a_setData = true);
-	}
+			kShaderTotal
+		};
 
-	namespace RESET
+		ShaderDataOutput() = default;
+		ShaderDataOutput(RE::NiStringsExtraData* a_data);
+
+		bool Reset(RE::BSGeometry* a_geometry, RE::BSLightingShaderProperty* a_shaderProp, MaterialBase* a_material) const;
+
+		RE::BSShaderTextureSet* textureSet;
+		REX::Enum<Feature>      feature;
+		std::uint64_t           flags;
+		RE::NiColor             emissiveColor;
+		float                   emissiveMult;
+		bool                    hasData;
+	};
+
+	struct ActorApplier
 	{
-		using ResetData = std::tuple<
-			RE::NiStringsExtraData*,
-			RE::NiIntegerExtraData*,
-			RE::NiIntegerExtraData*,
-			RE::NiBooleanExtraData*,
-			RE::NiStringsExtraData*,
-			std::vector<RE::NiIntegerExtraData*>,
-			std::vector<RE::NiStringsExtraData*>,
-			std::vector<RE::NiStringsExtraData*>,
-			std::vector<RE::NiStringsExtraData*>>;
+		static void ToggleNode(RE::NiAVObject* a_root, RE::NiAVObject* a_node, bool a_cull, bool a_setData = false);
+		static void ToggleNode(RE::NiAVObject* a_root, const RE::BSFixedString& a_nodeN, bool a_cull, bool a_setData = false);
+		static void HeadPartAlpha(RE::Actor* a_actor, RE::NiAVObject* a_root, HeadPartType a_type, float a_alpha, bool a_setData = false);
+		static void SkinAlpha(RE::NiAVObject* a_root, float a_alpha, bool a_setData = false);
+		static void SkinAlpha(RE::NiAVObject* a_root, RE::NiAVObject* a_node, float a_alpha, bool a_setData = false);
+	};
 
-		using ShaderData = std::tuple<RE::BSShaderTextureSet*, Feature, std::uint64_t, RE::NiColor, float>;
+	struct ActorResetter
+	{
+		ActorResetter() = default;
+		ActorResetter(RE::Actor* a_actor, RE::NiAVObject* a_object, const RE::BSFixedString& a_folderName = {});
 
-		void                       stop_all_skin_shaders(RE::TESObjectREFR* a_ref);
-		std::pair<bool, ResetData> get_data(RE::NiAVObject* a_object);
+		bool ResetEffectsNotOfType(EFFECT::TYPE a_effectType) const;
 
-		void Toggle(RE::NiAVObject* a_root, RE::NiStringsExtraData* a_data);
-		void SkinAlpha(RE::NiAVObject* a_root, RE::NiBooleanExtraData* a_data);
-		void HeadPartAlpha(RE::Actor* a_actor, RE::NiAVObject* a_root, const std::vector<RE::NiIntegerExtraData*>& a_data);
-		void SkinTint(RE::Actor* a_actor, RE::NiAVObject* a_root, RE::NiIntegerExtraData* a_data);
-		void HairTint(RE::Actor* a_actor, RE::NiAVObject* a_root, RE::NiIntegerExtraData* a_data);
-		void FaceTXST(RE::Actor* a_actor, RE::NiAVObject* a_root, RE::NiStringsExtraData* a_data);
-		void ArmorTXST(RE::Actor* a_actor, RE::NiAVObject* a_root, const RE::BSFixedString& a_folderName, const std::vector<RE::NiStringsExtraData*>& a_vec);
-		void SkinTXST(RE::Actor* a_actor, RE::NiAVObject* a_root, const std::vector<RE::NiStringsExtraData*>& a_vec);
-		void MaterialShader(RE::NiAVObject* a_root, const std::vector<RE::NiStringsExtraData*>& a_vec);
-	}
+	private:
+		static void stop_all_skin_shaders(RE::TESObjectREFR* a_ref);
+		static void reset_textureset(RE::NiAVObject* a_object, RE::BSShaderTextureSet* a_txst, bool a_doOnlySkin, const std::string& a_folder = {});
+		static void reset_shaderdata(RE::NiAVObject* a_object, std::vector<RE::BSFixedString>& a_geometries);
+
+		void ResetToggle() const;
+		void ResetSkinAlpha() const;
+		void ResetHeadPartAlpha() const;
+		void ResetSkinTint() const;
+		void ResetHairTint() const;
+		void ResetFaceTXST() const;
+		void ResetArmorTXST() const;
+		void ResetSkinTXST() const;
+		void ResetMaterialShader() const;
+
+		// members
+		RE::NiPointer<RE::Actor>             actor{};
+		RE::NiPointer<RE::NiAVObject>        root{};
+		std::string                          folderName{};
+		RE::NiStringsExtraData*              toggle{};
+		RE::NiIntegerExtraData*              tintSkin{};
+		RE::NiIntegerExtraData*              tintHair{};
+		RE::NiBooleanExtraData*              alphaSkin{};
+		RE::NiStringsExtraData*              txstFace{};
+		std::vector<RE::NiIntegerExtraData*> alphaHDPT{};
+		std::vector<RE::NiStringsExtraData*> txst{};
+		std::vector<RE::NiStringsExtraData*> txstSkin{};
+		std::vector<RE::NiStringsExtraData*> shaders{};
+		bool                                 hasData{ false };
+	};
 
 	namespace ARMOR
 	{
