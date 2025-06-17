@@ -10,9 +10,9 @@
 
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
+#include "REX/REX/Singleton.h"
 
 #include <ClibUtil/numeric.hpp>
-#include <ClibUtil/singleton.hpp>
 #include <ClibUtil/string.hpp>
 #include <ankerl/unordered_dense.h>
 #include <frozen/map.h>
@@ -27,7 +27,6 @@ namespace numeric = clib_util::numeric;
 namespace string = clib_util::string;
 
 using namespace std::literals;
-using namespace clib_util::singleton;
 
 namespace stl
 {
@@ -37,8 +36,6 @@ namespace stl
 	void write_thunk_call(std::uintptr_t a_src)
 	{
 		auto& trampoline = SKSE::GetTrampoline();
-		SKSE::AllocTrampoline(14);
-
 		T::func = trampoline.write_call<5>(a_src, T::thunk);
 	}
 

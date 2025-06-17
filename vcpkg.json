@@ -12,5 +12,6 @@
     "spdlog",
     "srell",
     "xbyak"
-  ]
+  ],
+  "builtin-baseline": "16c71a39e5a0fc0bdb3fad03beef8f38ee00ee3b"
 }
