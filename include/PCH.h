@@ -51,7 +51,7 @@ namespace stl
 	{
 		return ((first == t) || ...);
 	}
-	
+
 	constexpr inline auto enum_range(auto first, auto last)
 	{
 		auto enum_range =

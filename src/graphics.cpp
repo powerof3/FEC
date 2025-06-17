@@ -128,11 +128,11 @@ namespace FEC::GRAPHICS
 	void ActorApplier::SkinAlpha(RE::NiAVObject* a_root, RE::NiAVObject* a_node, float a_alpha, bool a_setData)
 	{
 		a_node->UpdateMaterialAlpha(a_alpha, true);
-		
+
 		if (!a_setData) {
 			return;
 		}
-		
+
 		if (a_alpha == 1.0f) {
 			a_root->RemoveExtraData(EXTRA::SKIN_ALPHA);
 		} else {
