@@ -125,7 +125,7 @@ void InitializeLog()
 
 extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_skse)
 {
-	SKSE::Init(a_skse);
+	SKSE::Init(a_skse, false);
 
 	InitializeLog();
 

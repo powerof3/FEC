@@ -251,6 +251,20 @@ namespace FEC::Papyrus
 		});
 	}
 
+	void ResetHead(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor)
+	{
+		if (!a_actor) {
+			a_vm->TraceStack("Actor is None", a_stackID);
+			return;
+		}
+
+		SKSE::GetTaskInterface()->AddTask([a_actor]() {
+			if (auto head = a_actor->GetFaceNodeSkinned()) {
+				head->SetAppCulled(false);
+			}
+		});
+	}
+
 	bool GetPermanentDeathEffect(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
 	{
 		if (!a_actor) {
@@ -448,6 +462,8 @@ namespace FEC::Papyrus
 		BIND(GetCauseOfDeath);
 		BIND(RemoveEffectsNotOfType);
 		BIND(SendFECResetEvent, true);
+
+		BIND(ResetHead);
 
 		BIND(GetPermanentDeathEffect, true);
 		BIND(GetTemporaryDeathEffect, true);

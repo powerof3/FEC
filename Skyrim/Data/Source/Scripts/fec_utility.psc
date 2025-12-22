@@ -26,6 +26,8 @@ import po3_SKSEFunctions
 	; 3 - frozenCol
 	Function SendFECResetEvent(Actor akActor, int aiType, bool abReset3D) global native
 	
+	Function ResetHead(Actor akActor) global native
+	
 	Function VaporizeUnderwear(Actor akVictim) global native
 	
 	bool Function GetPermanentDeathEffect(Actor akActor, int aiEffectType) global native
@@ -204,14 +206,15 @@ ObjectReference Function PlaceBodyParts(Actor akVictim, MiscObject[] akParts, in
 endFunction
 
 bool Function ResetActor3D_FEC(Actor akVictim, bool abRemoveArmor = true) global
-	
 
 	if abRemoveArmor				
 		utility.Wait(0.10) ;wait for any inventory resets
 		RemoveAllModItems(akVictim, "FEC.esp", false)
 	endif
 	if WaitFor3DLoad(akVictim)
-		return ResetActor3D(akVictim, "po3_FEC")
+		ResetActor3D(akVictim, "po3_FEC")
+		ResetHead(akVictim)
+		return true;
 	endif
 	
 	return false

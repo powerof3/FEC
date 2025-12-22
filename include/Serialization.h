@@ -106,11 +106,12 @@ namespace FEC::Serialization
 			void load(const SKSE::SerializationInterface* a_intfc)
 			{
 				assert(a_intfc);
-				std::size_t numRegs;
-				a_intfc->ReadRecordData(numRegs);
-
+				
 				Locker locker(_lock);
 				_map.clear();
+
+				std::size_t numRegs;
+				a_intfc->ReadRecordData(numRegs);
 
 				if constexpr (std::is_same_v<T, ActorEffect::Permanent>) {
 					RE::FormID   formID;
@@ -118,13 +119,10 @@ namespace FEC::Serialization
 
 					for (std::size_t i = 0; i < numRegs; i++) {
 						a_intfc->ReadRecordData(formID);
-						if (!a_intfc->ResolveFormID(formID, formID)) {
-							logger::warn("{} : Failed to resolve formID {:X}"sv, i, formID);
-							continue;
+						if (a_intfc->ResolveFormID(formID, formID)) {
+							a_intfc->ReadRecordData(effect);
+							_map.emplace(formID, static_cast<T>(effect));
 						}
-						a_intfc->ReadRecordData(effect);
-
-						_map.emplace(formID, static_cast<T>(effect));
 					}
 
 				} else {
@@ -134,14 +132,12 @@ namespace FEC::Serialization
 
 					for (std::size_t i = 0; i < numRegs; i++) {
 						a_intfc->ReadRecordData(formID);
-						if (!a_intfc->ResolveFormID(formID, formID)) {
-							logger::warn("{} : Failed to resolve formID {:X}"sv, i, formID);
-							continue;
-						}
-						a_intfc->ReadRecordData(numEffects);
-						for (std::size_t j = 0; j < numEffects; j++) {
-							a_intfc->ReadRecordData(effect);
-							_map[formID].insert(static_cast<ActorEffect::Temporary>(effect));
+						if (a_intfc->ResolveFormID(formID, formID)) {
+							a_intfc->ReadRecordData(numEffects);
+							for (std::size_t j = 0; j < numEffects; j++) {
+								a_intfc->ReadRecordData(effect);
+								_map[formID].insert(static_cast<ActorEffect::Temporary>(effect));
+							}
 						}
 					}
 				}
@@ -168,29 +164,29 @@ namespace FEC::Serialization
 				}
 
 				if constexpr (std::is_same_v<T, ActorEffect::Permanent>) {
-					for (auto& [key, mapped] : _map) {
-						if (!a_intfc->WriteRecordData(key)) {
-							logger::error("\tFailed to save key ({:X}: {})!", key, std::to_underlying(mapped));
+					for (auto& [formID, effect] : _map) {
+						if (!a_intfc->WriteRecordData(formID)) {
+							logger::error("\tFailed to save key ({:X}: {})!", formID, static_cast<std::uint32_t>(effect));
 							return false;
 						}
-						if (!a_intfc->WriteRecordData(std::to_underlying(mapped))) {
-							logger::error("\tFailed to save value ({:X}: {})!", key, std::to_underlying(mapped));
+						if (!a_intfc->WriteRecordData(static_cast<std::uint32_t>(effect))) {
+							logger::error("\tFailed to save value ({:X}: {})!", formID, static_cast<std::uint32_t>(effect));
 							return false;
 						}
 					}
 				} else {
-					for (auto& [key, set] : _map) {
-						if (!a_intfc->WriteRecordData(key)) {
-							logger::error("\tFailed to save key ({:X})!", key);
+					for (auto& [formID, effects] : _map) {
+						if (!a_intfc->WriteRecordData(formID)) {
+							logger::error("\tFailed to save key ({:X})!", formID);
 							return false;
 						}
-						if (!a_intfc->WriteRecordData(set.size())) {
-							logger::error("\tFailed to save value size ({:X})!", key);
+						if (!a_intfc->WriteRecordData(effects.size())) {
+							logger::error("\tFailed to save effects size ({:X})!", formID);
 							return false;
 						}
-						for (auto& mapped : set) {
-							if (!a_intfc->WriteRecordData(std::to_underlying(mapped))) {
-								logger::error("\tFailed to save reg ({:X} : {})!", key, std::to_underlying(mapped));
+						for (auto& effect : effects) {
+							if (!a_intfc->WriteRecordData(static_cast<std::uint32_t>(effect))) {
+								logger::error("\tFailed to save reg ({:X} : {})!", formID, static_cast<std::uint32_t>(effect));
 								return false;
 							}
 						}
