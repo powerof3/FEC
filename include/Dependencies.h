@@ -21,7 +21,7 @@ namespace Dependencies
 
 		bool operator<(const Version& a_rhs) const
 		{
-			return major < a_rhs.major || minor < a_rhs.minor;
+			return major < a_rhs.major && minor < a_rhs.minor;
 		}
 
 		std::uint32_t major{ 0 };

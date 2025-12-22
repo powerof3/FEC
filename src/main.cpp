@@ -73,7 +73,7 @@ extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []() {
 	v.AuthorName("powerofthree");
 	v.UsesAddressLibrary();
 	v.UsesUpdatedStructs();
-	v.CompatibleVersions({ SKSE::RUNTIME_LATEST });
+	v.CompatibleVersions({ SKSE::RUNTIME_SSE_LATEST });
 
 	return v;
 }();
@@ -92,7 +92,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
 	const auto ver = a_skse->RuntimeVersion();
 	if (ver <
 #	ifndef SKYRIMVR
-		SKSE::RUNTIME_1_5_39
+		SKSE::RUNTIME_SSE_1_5_39
 #	else
 		SKSE::RUNTIME_VR_1_4_15
 #	endif
