@@ -4,9 +4,6 @@
 #include "Patches.h"
 #include "Serialization.h"
 
-//GLOBAL VARS
-RE::SpellItem* deathEffectsPCAbility{};
-
 void OnInit(SKSE::MessagingInterface::Message* a_msg)
 {
 	switch (a_msg->type) {
@@ -26,9 +23,9 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 				}
 
 				FEC::deathEffectsAbility = dataHandler->LookupForm<RE::SpellItem>(0x8E7, "FEC.esp");
-				deathEffectsPCAbility = dataHandler->LookupForm<RE::SpellItem>(0x8E4, "FEC.esp");
+				FEC::deathEffectsPCAbility = dataHandler->LookupForm<RE::SpellItem>(0x8E4, "FEC.esp");
 
-				if (!FEC::deathEffectsAbility || !deathEffectsPCAbility) {
+				if (!FEC::deathEffectsAbility || !FEC::deathEffectsPCAbility) {
 					logger::error("unable to find death effect abilities");
 					if (consoleLog) {
 						consoleLog->Print("[FEC] FEC.esp is not loaded! Disabling FEC helper plugin\n");
@@ -55,7 +52,7 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 	case SKSE::MessagingInterface::kPostLoadGame:
 	case SKSE::MessagingInterface::kNewGame:
 		{
-			if (FEC::mod && FEC::deathEffectsAbility && deathEffectsPCAbility) {
+			if (FEC::mod && FEC::deathEffectsAbility && FEC::deathEffectsPCAbility) {
 				FEC::POST_LOAD_PATCH::Install();
 			}
 		}

@@ -1,9 +1,6 @@
 #include "Serialization.h"
 #include "Patches.h"
 
-extern RE::SpellItem* deathEffectsAbility;
-extern RE::SpellItem* deathEffectsPCAbility;
-
 namespace FEC::Serialization
 {
 	std::string DecodeTypeCode(std::uint32_t a_typeCode)
@@ -120,8 +117,8 @@ namespace FEC::Serialization
 		}
 
 		if (const auto player = RE::PlayerCharacter::GetSingleton(); player) {
-			player->RemoveSpell(deathEffectsPCAbility);
-			player->AddSpell(deathEffectsPCAbility);
+			player->RemoveSpell(FEC::deathEffectsPCAbility);
+			player->AddSpell(FEC::deathEffectsPCAbility);
 		}
 
 		if (const auto processLists = RE::ProcessLists::GetSingleton()) {
