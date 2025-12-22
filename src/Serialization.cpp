@@ -136,11 +136,11 @@ namespace FEC::Serialization
 				const auto spellList = actorbase ? actorbase->GetSpellList() : nullptr;
 
 				if (actor && actorbase && spellList) {
-					if (has_base_spell(spellList, deathEffectsAbility)) {
-						actor->RemoveSpell(deathEffectsAbility);
-						actor->AddSpell(deathEffectsAbility);
+					if (has_base_spell(spellList, FEC::deathEffectsAbility)) {
+						actor->RemoveSpell(FEC::deathEffectsAbility);
+						actor->AddSpell(FEC::deathEffectsAbility);
 					} else if (DISTRIBUTE::CanDeathEffectsBeAdded(actorbase)) {
-						spellList->AddSpell(deathEffectsAbility);
+						spellList->AddSpell(FEC::deathEffectsAbility);
 					}
 				}
 			}
