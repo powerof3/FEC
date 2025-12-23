@@ -228,6 +228,8 @@ namespace FEC
 		inline constexpr auto panty0{ "Panty"sv };
 		inline constexpr auto panty1{ "PantyBowTies1"sv };
 		inline constexpr auto panty2{ "PantyBowTies2"sv };
+		inline constexpr auto shorts{ "BodyM_uwear_SHORTS"sv };
+		inline constexpr auto belt{ "BodyM_uwear_BELT"sv };
 
 		inline constexpr std::array underwears{
 			male0,
@@ -242,7 +244,9 @@ namespace FEC
 			bra3,
 			panty0,
 			panty1,
-			panty2
+			panty2,
+			shorts,
+			belt
 		};
 	}
 }
