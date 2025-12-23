@@ -1500,13 +1500,18 @@ Function BurnEffect(bool applyShock = false)
 	int effectType = GetEffectType(kFIRE)
 	randomEffect = GenerateRandomInt(1,3)	
 	bool vampMode = FEC_FireUndeadToggle.GetValue() as bool
+	bool fallbackSkele = false;
 	;---------------------------------------
 		
-	if !disintegrateProof && !isVIP && ((effectType == kRANDOM && randomEffect == 3) || (effectType == kAUTOMATIC && spellLevel == 100) || effectType == kVAPOURISE || \
+	if ((effectType == kRANDOM && randomEffect == 3) || (effectType == kAUTOMATIC && spellLevel == 100) || effectType == kVAPOURISE || \
 		(victim.HasKeyword(ActorTypeUndead) && vampMode))
-		GoToState("DoneForReal")
-		CreateAshPileEffect(victim, FEC_FireDisintegrateFXS, FEC_AshPile)	
-		return				
+		if !disintegrateProof && !isVIP
+			GoToState("DoneForReal")
+			CreateAshPileEffect(victim, FEC_FireDisintegrateFXS, FEC_AshPile)	
+			return
+		else
+			fallbackSkele = true
+		endif
 	endif 
 	
 	if spellLevel >= 75
@@ -1544,7 +1549,7 @@ Function BurnEffect(bool applyShock = false)
 					
 			SetCharredNew()
 						
-		elseif effectType == kSKELE || (effectType == kRANDOM && randomEffect == 2)
+		elseif effectType == kSKELE || (effectType == kRANDOM && randomEffect == 2) || fallbackSkele
 								
 			SetSkeletonNew()	
 			
