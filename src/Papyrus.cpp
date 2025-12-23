@@ -450,6 +450,19 @@ namespace FEC::Papyrus
 		});
 	}
 
+	std::uint32_t GetRandomFlag(VM*, StackID, RE::StaticFunctionTag*, std::uint32_t a_mask, std::uint32_t a_count)
+	{
+		std::uint32_t flag = 0;
+		std::uint32_t bit = 0;
+
+		do {
+			flag = clib_util::RNG().generate<std::uint32_t>(0, a_count - 1);
+			bit = 1 << flag;
+		} while (!(a_mask & bit));
+
+		return flag;
+	}
+
 	bool Bind(VM* a_vm)
 	{
 		if (!a_vm) {
@@ -480,6 +493,8 @@ namespace FEC::Papyrus
 		BIND(UnregisterForAllFECResets, true);
 
 		BIND(VaporizeUnderwear);
+
+		BIND(GetRandomFlag, true);
 
 		logger::info("Registered FEC functions"sv);
 

@@ -382,21 +382,13 @@ endFunction
 
 Function SetEffectMode(GlobalVariable gVar, String[] settings)
 
-	if GetModSettingBool(settings[0])
-		gVar.SetValue(0.0)
-		return
-	elseif GetModSettingBool(settings[1])
-		gVar.SetValue(1.0)
-		return
-	endif
-	
 	gVar.SetValue(0.0)
 
-	int i = 2
+	int i = 0
 	int len = settings.Length	
 	while i < len
 		if GetModSettingBool(settings[i])
-			gVar.Mod(Math.LeftShift(1, i) as float)
+			gVar.SetValueInt(Math.LogicalOr(gVar.GetValueInt(),Math.LeftShift(1, i)))
 		endif
 		i += 1
 	endWhile
@@ -410,16 +402,11 @@ bool Function SetEffectModeOnChange(GlobalVariable gVar, String a_ID, String[] s
 		return false
 	endif
 	
-	if idx < 2
-		if GetModSettingBool(a_ID)
-			gVar.SetValue(idx)
-		endif
+	if GetModSettingBool(a_ID)
+		gVar.SetValueInt(Math.LogicalOr(gVar.GetValueInt(),Math.LeftShift(1, idx)))
 	else
-		if GetModSettingBool(a_ID)
-			gVar.Mod(Math.LeftShift(1, idx) as float)
-		else
-			gVar.Mod(-Math.LeftShift(1, idx) as float)			
-		endif
+		Int mask = Math.LogicalNot(Math.LeftShift(1, idx))
+		gVar.SetValueInt(Math.LogicalAnd(gVar.GetValueInt(),mask))		
 	endif
 	
 	return true

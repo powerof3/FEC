@@ -43,7 +43,9 @@ import po3_SKSEFunctions
 	
 	Function RegisterForFECReset_Form(Form akForm, int aiType) global native
 	Function UnregisterForFECReset_Form(Form akForm, int aiType) global native
-	Function UnregisterForAllFECResets_Form(Form akForm) global native			
+	Function UnregisterForAllFECResets_Form(Form akForm) global native
+
+	Int Function GetRandomFlag(Int aiMask, Int aiCount) global native
 		
 	Event OnFECReset(Actor akActor, int aiType, bool abReset3D)
 	EndEvent

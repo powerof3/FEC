@@ -1630,17 +1630,20 @@ endFunction
 
 int Function GetEffectType(int type)
 
-	if type == kFIRE ; FIRE			
-		return FEC_FireModesCr.GetValue() as int						
-	elseif type == kFROST ; FROST			
-		return FEC_FrostModesCR.GetValue() as int		
-	;elseif type == 2 ; SHOCK
-		;
-	;elseif type == 3 ; DRAIN
-		;
+	int effectMask = 1 ; AUTO
+	int effectCount;
+	
+	if type == kFIRE
+		effectMask = FEC_FireModesCr.GetValue() as int
+		effectCount = 4
+	elseif type == kFROST
+		effectMask = FEC_FrostModesCr.GetValue() as int
+		effectCount = 3
+	else
+		return 1;
 	endif
 	
-	return 1 ;AUTO
+	return GetRandomFlag(effectMask, effectCount)
 	
 endFunction	
 

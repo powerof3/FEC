@@ -14,6 +14,7 @@
 
 #include <ClibUtil/numeric.hpp>
 #include <ClibUtil/string.hpp>
+#include <ClibUtil/rng.hpp>
 #include <ankerl/unordered_dense.h>
 #include <frozen/map.h>
 #include <spdlog/sinks/basic_file_sink.h>

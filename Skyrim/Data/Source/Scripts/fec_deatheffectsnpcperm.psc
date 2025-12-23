@@ -2345,51 +2345,23 @@ endFunction
 
 int Function GetEffectType(int type)
 
-	int effectTypes = 1; AUTO
-	int effectCount = 5;
+	int effectMask = 1 ; AUTO
+	int effectCount = 5
 	
-	if type == kFIRE 			
-		effectTypes = FEC_FireModes.GetValue() as int				
-	elseif type == kFROST 
-		effectTypes = FEC_FrostModes.GetValue() as int		
+	if type == kFIRE
+		effectMask = FEC_FireModes.GetValue() as int
+	elseif type == kFROST
+		effectMask = FEC_FrostModes.GetValue() as int
 	elseif type == kSHOCK
-		effectTypes = FEC_ShockModes.GetValue() as int	
+		effectMask = FEC_ShockModes.GetValue() as int
 	elseif type == kDRAIN
-		effectTypes = FEC_DrainModes.GetValue() as int		
+		effectMask = FEC_DrainModes.GetValue() as int
 		effectCount = 4
 	endif
 	
-	; Random or Auto
-	if (effectTypes < 2)
-		return effectTypes
-	endif
+	return GetRandomFlag(effectMask, effectCount)
 	
-	int activeEffectCount = 0
-	
-	int i = 2
-	while i < effectCount
-		if GetFlagSet(effectTypes, i)
-			activeEffectCount += 1
-		endif
-		i+= 1
-	endWhile
-	
-	int randomActiveEffect = GenerateRandomInt(0, activeEffectCount);
-	
-	; return randomActiveEffect if only flag is set
-	i = 2
-	while i < effectCount
-		if GetFlagSet(effectTypes, i)
-			if i - 2 == randomActiveEffect
-				return i
-			endif
-		endif
-		i+= 1
-	endWhile
-	
-	return 1
-	
-endFunction	
+endFunction
 
 Function GoToBuffer()
 
@@ -2549,11 +2521,5 @@ Function UnregisterComplexEvents()
 		UnregisterForAllHitEventsEx(self)
 		UnregisterForAllFECResets(self)
 	endif
-
-endFunction
-
-bool Function GetFlagSet(int aiNum, int aiFlag)
-
-	return Math.LogicalAnd(aiNum, Math.LeftShift(1, aiFlag))
 
 endFunction

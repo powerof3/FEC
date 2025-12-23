@@ -28,5 +28,7 @@ namespace FEC::Papyrus
 
 	void VaporizeUnderwear(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor);
 
+	std::uint32_t GetRandom(VM*, StackID, RE::StaticFunctionTag*, std::uint32_t a_mask, std::uint32_t count);
+
 	bool Bind(VM* a_vm);
 }

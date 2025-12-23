@@ -189,8 +189,8 @@ int kSHATTER = 4
 int kXRAY = 3
 int kEXPLODE = 4
 ;drain
-int kAGE = 1
-int kDESSICATE = 2
+int kAGE = 2
+int kDESSICATE = 3
 
 Keyword property MagicDamageFire auto
 Keyword property MagicDamageShock auto
@@ -826,17 +826,21 @@ endFunction
 
 int Function GetEffectType(int type)
 
-	if type == kFIRE ; FIRE			
-		return FEC_FireModes.GetValue() as int				
-	elseif type == kFROST ; FROST
-		return FEC_FrostModes.GetValue() as int		
-	elseif type == kSHOCK ; SHOCK	
-		return FEC_ShockModes.GetValue() as int	
-	elseif type == kDRAIN ; DRAIN	
-		return FEC_DrainModes.GetValue() as int		
+	int effectMask = 1 ; AUTO
+	int effectCount = 5
+	
+	if type == kFIRE
+		effectMask = FEC_FireModes.GetValue() as int
+	elseif type == kFROST
+		effectMask = FEC_FrostModes.GetValue() as int
+	elseif type == kSHOCK
+		effectMask = FEC_ShockModes.GetValue() as int
+	elseif type == kDRAIN
+		effectMask = FEC_DrainModes.GetValue() as int
+		effectCount = 4
 	endif
 	
-	return 1 ;AUTO
+	return GetRandomFlag(effectMask, effectCount)
 	
 endFunction	
 
