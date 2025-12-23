@@ -106,7 +106,7 @@ namespace FEC::Serialization
 			void load(const SKSE::SerializationInterface* a_intfc)
 			{
 				assert(a_intfc);
-				
+
 				Locker locker(_lock);
 				_map.clear();
 
