@@ -15,7 +15,7 @@ namespace Dependencies
 			if (peGetVersion != nullptr) {
 				Version currentPE{ peGetVersion() };
 				if (currentPE < requiredPE) {
-					return fmt::format("[FEC] Papyrus Extender is out of date! FEC requires {} or higher; current PE version is {}\n", requiredPE, currentPE);
+					return std::format("[FEC] Papyrus Extender is out of date! FEC requires {} or higher; current PE version is {}\n", requiredPE, currentPE);
 				}
 			} else {
 				logger::error("Failed version check info from PapyrusExtender | error {} ", GetLastError());

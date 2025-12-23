@@ -41,7 +41,7 @@ namespace Dependencies
 }
 
 template <>
-struct fmt::formatter<Dependencies::Version>
+struct std::formatter<Dependencies::Version>
 {
 	template <class ParseContext>
 	constexpr auto parse(ParseContext& a_ctx)
@@ -52,6 +52,6 @@ struct fmt::formatter<Dependencies::Version>
 	template <class FormatContext>
 	auto format(const Dependencies::Version& a_version, FormatContext& a_ctx) const
 	{
-		return fmt::format_to(a_ctx.out(), "{}.{}.{}", a_version.major, a_version.minor, a_version.patch);
+		return std::format_to(a_ctx.out(), "{}.{}.{}", a_version.major, a_version.minor, a_version.patch);
 	}
 };
