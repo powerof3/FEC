@@ -37,7 +37,7 @@ namespace Dependencies
 	inline constexpr auto PapyrusUtil{ "PapyrusUtil"sv };
 	inline constexpr auto po3Tweaks{ "po3_Tweaks"sv };
 
-	inline Version requiredPE{ 5, 4, 0 };
+	inline Version requiredPE{ 6, 3, 0 };
 }
 
 template <>
