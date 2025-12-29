@@ -185,6 +185,9 @@ Spell property FEC_ShockCorpseSpell auto
 String victimName
 String frostTXSTIncludePath
 
+Form [] inventoryArray
+Form [] notEquippedArray
+
 TextureSet property FEC_DefaultSkeleTXST auto
 TextureSet property FEC_DefaultSkeleBeastTXST auto
 TextureSet property FEC_FireCharSkeleTXST auto
@@ -1327,9 +1330,21 @@ Function FreezeEffect(bool applyShock = false)
 			inventoryContainer = victim.PlaceAtMe(FEC_FrostContainerCorpseCr)
 			if WaitFor3DLoad(inventoryContainer)			
 				inventoryContainer.SplineTranslateToRefNode(victim, "MagicEffectsNode",1.0,10000.0)
-				inventoryContainer.SetActorOwner(playerRef.GetActorBase())	
 				
-				victim.RemoveAllItems(inventoryContainer, abRemoveQuestItems = true)
+				inventoryArray = AddAllItemsToArray(victim, true, false, false)
+				notEquippedArray = AddAllEquippedItemsToArray(victim)		
+				int iIndex = inventoryArray.Length
+				while iIndex
+					iIndex -= 1
+					victim.RemoveItem(inventoryArray[iIndex], 1, true, inventoryContainer)  
+				endwhile		
+				int iIndex2 = notEquippedArray.Length
+				while iIndex2
+					iIndex2 -= 1
+					inventoryContainer.AddItem(notEquippedArray[iIndex2], 1)  
+				endwhile
+			
+				inventoryContainer.SetActorOwner(playerRef.GetActorBase())						
 			endif
 					
 			if applyShock		
@@ -1371,9 +1386,21 @@ Function FreezeEffect(bool applyShock = false)
 		
 		if WaitFor3DLoad(inventoryContainer)		
 			inventoryContainer.SplineTranslateToRefNode(victim, nodeName, 1.0,10000.0)		
-			inventoryContainer.SetActorOwner(playerRef.GetActorBase())
 			
-			victim.RemoveAllItems(inventoryContainer, abRemoveQuestItems = true)
+			inventoryArray = AddAllItemsToArray(victim, true, false, false)
+			notEquippedArray = AddAllEquippedItemsToArray(victim)		
+			int iIndex = inventoryArray.Length
+			while iIndex
+				iIndex -= 1
+				victim.RemoveItem(inventoryArray[iIndex], 1, true, inventoryContainer)  
+			endwhile		
+			int iIndex2 = notEquippedArray.Length
+			while iIndex2
+				iIndex2 -= 1
+				inventoryContainer.AddItem(notEquippedArray[iIndex2], 1)  
+			endwhile
+		
+			inventoryContainer.SetActorOwner(playerRef.GetActorBase())		
 		endif
 		
 		if applyShock		
