@@ -2398,7 +2398,8 @@ Function EquipArmorInSlot_Unequip(Armor curArmor)
 	
 	if Math.LogicalAnd(slotMask, 0x00000001) || Math.LogicalAnd(slotMask, 0x00000002) ;head/hair	
 		if charred
-			EquipHead(victim, FEC_FireCharHead, FEC_FireCharHeadDecap, true, true)		
+			EquipHead(victim, FEC_FireCharHead, FEC_FireCharHeadDecap, true, true)
+			ToggleChildNode(victim, "BSFaceGenNiNodeSkinned", true)			
 		elseif skeletonized
 			EquipHead(victim,FEC_FireSkeleHead, None, false, true)	
 			ToggleChildNode(victim, "BSFaceGenNiNodeSkinned", true)

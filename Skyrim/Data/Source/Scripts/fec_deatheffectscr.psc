@@ -295,9 +295,9 @@ Auto State Default
 				
 					if isReanimated												
 						reanimated = true							
-						GoToStateDebug("Sleeping")						
+						GoToState("Sleeping")						
 					else					
-						GoToStateDebug("Done")							
+						GoToState("Done")							
 					endif
 					
 				endif
@@ -308,7 +308,7 @@ Auto State Default
 								
 				if isReanimated															
 					reanimated = true						
-					GoToStateDebug("Sleeping")					
+					GoToState("Sleeping")					
 				else				
 					GoToBuffer()					
 				endif
@@ -382,12 +382,12 @@ Auto State Default
 				
 			elseif magicType == kSUN && !disintegrateProof && !isVIP && randomChance <= FEC_SunRandomChanceCr.GetValue() as int	
 								
-				GoToStateDebug("DoneForReal")
+				GoToState("DoneForReal")
 				CreateAshPileEffect(victim, FEC_SunDisintegrateFXS, FEC_AshPile)	
 			
 			;/elseif magicType == kACID && !disintegrateProof && !isVIP && randomChance <= FEC_AcidRandomChanceCr.GetValue() as int	
 								
-				GoToStateDebug("DoneForReal")
+				GoToState("DoneForReal")
 				CreateAshPileEffect(victim, FEC_AcidDisintegrateFXS, FEC_AcidAshPile, 0.5, 1.30)/;
 				
 			else
@@ -719,7 +719,7 @@ State AfterDeath
 	Event OnDeathEffectsInactiveCR()
 	
 		sleeping = true
-		GoToStateDebug("Sleeping")
+		GoToState("Sleeping")
 			
 	endEvent
 		
@@ -737,7 +737,7 @@ State AfterDeath
 		if akTarget == victim
 		
 			reanimated = true
-			GoToStateDebug("Sleeping")
+			GoToState("Sleeping")
 			
 			UnregisterForActorReanimateStart(self)
 		
@@ -760,12 +760,12 @@ State AfterDeath
 			
 			if akEffect.HasKeywordString("po3_MagicDamageSun") && !disintegrateProof && !isVIP && randomChance <= FEC_SunRandomChanceCr.GetValue() as int
 																							
-				GoToStateDebug("DoneForReal")
+				GoToState("DoneForReal")
 				CreateAshPileEffect(victim, FEC_SunDisintegrateFXS, FEC_AshPile)
 				
 			;/elseif IsAcidEffect(akEffect) && !disintegrateProof && !isVIP && randomChance <= FEC_AcidRandomChanceCr.GetValue() as int	
 								
-				GoToStateDebug("DoneForReal")
+				GoToState("DoneForReal")
 				CreateAshPileEffect(victim, FEC_AcidDisintegrateFXS, FEC_AcidAshPile, 0.5, 1.30)/;
 				
 			elseif akEffect.HasKeyword(MagicDamageFire) && randomChance <= FEC_FireRandomChanceCr.GetValue() as int
@@ -839,9 +839,9 @@ State Sleeping
 		
 		if !reanimated
 			if permanentEffect
-				GoToStateDebug("Done")
+				GoToState("Done")
 			else
-				GoToStateDebug("AfterDeath")
+				GoToState("AfterDeath")
 			endif
 		endif
 			
@@ -867,9 +867,9 @@ State Sleeping
 			
 			reanimated = false				
 			if permanentEffect
-				GoToStateDebug("Done")
+				GoToState("Done")
 			else
-				GoToStateDebug("AfterDeath")
+				GoToState("AfterDeath")
 			endif					
 			UnregisterForActorReanimateStop(self)
 			
@@ -911,7 +911,7 @@ State Done
 	Event OnBeginState()
 							
 		if reanimated		
-			GoToStateDebug("Sleeping")
+			GoToState("Sleeping")
 			return			
 		endif
 		
@@ -947,7 +947,7 @@ State Done
 	Event OnDeathEffectsInactiveCr()
 	
 		sleeping = true
-		GoToStateDebug("Sleeping")
+		GoToState("Sleeping")
 			
 	endEvent
 	
@@ -972,7 +972,7 @@ State Done
 		if akTarget == victim
 		
 			reanimated = true
-			GoToStateDebug("Sleeping")
+			GoToState("Sleeping")
 			
 			UnregisterForActorReanimateStart(self)
 		
@@ -1006,12 +1006,12 @@ State Done
 			
 			if akEffect.HasKeywordString("po3_MagicDamageSun") && !disintegrateProof && !isVIP && randomChance <= FEC_SunRandomChanceCr.GetValue() as int
 						
-				GoToStateDebug("DoneForReal")
+				GoToState("DoneForReal")
 				CreateAshPileEffect(victim, FEC_SunDisintegrateFXS, FEC_AshPile)
 
 			;/elseif IsAcidEffect(akEffect) && !disintegrateProof && !isVIP && randomChance <= FEC_AcidRandomChanceCr.GetValue() as int	
 								
-				GoToStateDebug("DoneForReal")
+				GoToState("DoneForReal")
 				CreateAshPileEffect(victim, FEC_AcidDisintegrateFXS, FEC_AcidAshPile, 0.5, 1.30)/;
 			
 			elseif akEffect.HasKeyword(MagicDamageFire) && randomChance <= FEC_FireRandomChanceCr.GetValue() as int
@@ -1077,7 +1077,7 @@ State DoneForReal
 			SendFECResetEvent(victim, kRESET_TEMP, false)
 		endif
 		
-		GoToStateDebug("Default")
+		GoToState("Default")
 								
 	endEvent
 	
@@ -1131,7 +1131,7 @@ endState
 
 Function BurnEffect(bool applyShock = false)
 
-	GoToStateDebug("FireBuffer")
+	GoToState("FireBuffer")
 	
 	;---------------------VARIABLES----------------------------
 	int effectType = GetEffectType(kFIRE)	
@@ -1139,7 +1139,7 @@ Function BurnEffect(bool applyShock = false)
 	;----------------------------------------------------------
 	
 	if !disintegrateProof && !isVIP && ((effectType == kRANDOM && randomEffect == 2) || (effectType == kAUTOMATIC && spellLevel == 100) || effectType == kVAPOURISED)
-		GoToStateDebug("DoneForReal")
+		GoToState("DoneForReal")
 		CreateAshPileEffect(victim, FEC_FireDisintegrateFXS, FEC_AshPile)	
 		return					
 	endif
@@ -1257,7 +1257,7 @@ Function BurnEffect(bool applyShock = false)
 	
 	fireRefractionEffect.Stop(victim)
 	
-	GoToStateDebug("Done")
+	GoToState("Done")
   	
 endFunction
  
@@ -1267,7 +1267,7 @@ endFunction
 
 Function SteamEffect(bool applyFrost = false, bool applyShock = false)	
 		
-	GoToStateDebug("EffectBuffer")
+	GoToState("EffectBuffer")
 	
 	FEC_SteamFXS.Play(victim, GenerateRandomFloat(8.0,10.0))  ; smoke effect	
 	FEC_FireCharCrFXS.Play(victim)
@@ -1299,7 +1299,9 @@ endFunction
 
 Function FreezeEffect(bool applyShock = false)
 
-	GoToStateDebug("EffectBuffer")
+	debug.trace("freeze effect triggered " + victim)
+	
+	GoToState("EffectBuffer")
 	
 	;---------------VARIABLES---------------	
 	int effectType = GetEffectType(kFROST)
@@ -1355,7 +1357,7 @@ Function FreezeEffect(bool applyShock = false)
 			frozen = true
 			AssignPermanentDeathEffect(victim, kEFFECT_Frozen)
 					
-			GoToStateDebug("FrozenBuffer")
+			GoToState("FrozenBuffer")
 			
 		else
 					
@@ -1411,7 +1413,7 @@ Function FreezeEffect(bool applyShock = false)
 		frozen = true
 		AssignPermanentDeathEffect(victim, kEFFECT_Frozen)
 		
-		GoToStateDebug("FrozenBuffer")
+		GoToState("FrozenBuffer")
 				
 	endif
 	
@@ -1423,7 +1425,7 @@ endFunction
 
 Function ShockEffect(bool applyFrost = false)
 
-	GoToStateDebug("ShockBuffer")
+	GoToState("ShockBuffer")
 	
 	FEC_ShockFXS.Play(victim)
 	if applyFrost		
@@ -1475,7 +1477,7 @@ Function ShockEffect(bool applyFrost = false)
 	FEC_ShockFXS.Stop(victim)
 	genericTriggerEffect.Stop(victim)
 	
-	GoToStateDebug("Done")
+	GoToState("Done")
   	
 endFunction
 
@@ -1533,7 +1535,7 @@ Function IceBlock(bool applyShock = false)
 		FEC_ShockFXS.Play(victim, GenerateRandomFloat(6.0, 8.0))		
 	endif	
 	
-	GoToStateDebug("Done")
+	GoToState("Done")
 			
 endFunction
 
@@ -1554,7 +1556,7 @@ Function ResetFrozen(bool goToSleep = false)
 	inventoryContainer = None
 	
 	if goToSleep
-		GoToStateDebug("Sleeping")
+		GoToState("Sleeping")
 	else
 		GoToBuffer()
 	endif
@@ -1672,7 +1674,7 @@ int Function GetEffectType(int type)
 	
 	return GetRandomFlag(effectMask, effectCount)
 	
-endFunction	
+endFunction
 
 Function FullReset(bool goToDefault = false)
 
@@ -1701,7 +1703,7 @@ Function FullReset(bool goToDefault = false)
 	else
 		ResetActor3D_FEC(victim, false)	
 		UnregisterForAllFECResets(self)
-		GoToStateDebug("Default")
+		GoToState("Default")
 	endif
 
 endFunction
@@ -1721,15 +1723,15 @@ endFunction
 Function GoToBuffer()
 
 	if !victim.IsDead()
-		GoToStateDebug("Default")
+		GoToState("Default")
 		return		
 	endif
 	
 	if FEC_PostDeathEffectsCrToggle.GetValue() as bool	
-		GoToStateDebug("AfterDeath")
+		GoToState("AfterDeath")
 	else
 		sleeping = true
-		GoToStateDebug("Sleeping")
+		GoToState("Sleeping")
 	endif
 	
 endFunction

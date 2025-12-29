@@ -439,11 +439,10 @@ Function SetupEffectModes()
 	frostModes[3] = "bIceBlock:FrostEffects"
 	frostModes[4] = "bShatter:FrostEffects"
 
-	frostModesCR = new String[4]
-	frostModesCR[0] = "bRandomCR:FrostEffects"
-	frostModesCR[1] = "bAutomaticCR:FrostEffects"
-	frostModesCR[2] = "bFreezeCR:FrostEffects"
-	frostModesCR[3] = "bIceBlockCR:FrostEffects"
+	frostModesCR = new String[3]
+	frostModesCR[0] = "bAutomaticCR:FrostEffects"
+	frostModesCR[1] = "bFreezeCR:FrostEffects"
+	frostModesCR[2] = "bIceBlockCR:FrostEffects"
 
 	shockModes = new String[5]
 	shockModes[0] = "bRandom:ShockEffects"
