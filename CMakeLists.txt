@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 set(NAME "po3_FEC" CACHE STRING "")
-set(VERSION 6.0.0 CACHE STRING "")
+set(VERSION 6.1.0 CACHE STRING "")
 set(VR_VERSION 4)
 set(AE_VERSION 1)
 
