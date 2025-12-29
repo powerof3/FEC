@@ -696,8 +696,8 @@ namespace FEC::GRAPHICS
 				REL::Relocation<std::uintptr_t> loadBipedParts{ RELOCATION_ID(15501, 15678), OFFSET_3(0x1EA, 0x1EA, 0x1E7) };  //armor 2
 				stl::write_thunk_call<HideShowBufferedSkin>(loadBipedParts.address());
 
-				REL::Relocation<std::uintptr_t> replaceRefModel{ RELOCATION_ID(24236, 24740), OFFSET(0x33E, 0x562) };  // head
-				stl::write_thunk_call<UpdateHeadAndHair>(replaceRefModel.address());
+				REL::Relocation<std::uintptr_t> update_head_and_hair{ RELOCATION_ID(24220, 24724) };  // head
+				stl::hook_function_prologue<UpdateHeadAndHair, OFFSET(5, 8)>(update_head_and_hair.address());
 
 				logger::info("Hooked armor attach.");
 			}
@@ -768,7 +768,7 @@ namespace FEC::GRAPHICS
 
 			void Install()
 			{
-				REL::Relocation<std::uintptr_t> target{ RELOCATION_ID(15495, 15660), 0x1F };  //removeNodeFromScene
+				REL::Relocation<std::uintptr_t> target{ RELOCATION_ID(15495, 15660), 0x1F };  //bhkWorld::RemoveObjects
 				stl::write_thunk_call<UpdateCollision>(target.address());
 
 				logger::info("Hooked armor detach.");

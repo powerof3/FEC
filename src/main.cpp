@@ -40,7 +40,7 @@ void OnInit(SKSE::MessagingInterface::Message* a_msg)
 				}
 			}
 
-			SKSE::AllocTrampoline(56);
+			SKSE::AllocTrampoline(128);
 
 			FEC::GRAPHICS::Install();
 			FEC::PATCH::Install();

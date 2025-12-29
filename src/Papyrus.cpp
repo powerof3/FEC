@@ -77,6 +77,13 @@ namespace FEC::Papyrus
 			}
 			return 0;
 		}
+
+		static void UpdateHeadAndHair(RE::TESNPC* a_npc, RE::Actor* a_actor, RE::NiNode* a_node)
+		{
+			using func_t = decltype(&UpdateHeadAndHair);
+			static REL::Relocation<func_t> func{ RELOCATION_ID(24220, 24724) };
+			return func(a_npc, a_actor, a_node);
+		}
 	};
 
 	std::vector<std::int32_t> GetCauseOfDeath(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::uint32_t a_type)
@@ -260,7 +267,9 @@ namespace FEC::Papyrus
 
 		SKSE::GetTaskInterface()->AddTask([a_actor]() {
 			if (auto head = a_actor->GetFaceNodeSkinned()) {
-				head->SetAppCulled(false);
+				if (auto npc = a_actor->GetActorBase()) {
+					detail::UpdateHeadAndHair(npc, a_actor, head);
+				}
 			}
 		});
 	}
