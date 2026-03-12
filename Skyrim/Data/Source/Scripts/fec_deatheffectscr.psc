@@ -1298,8 +1298,6 @@ endFunction
 ;==========================================================
 
 Function FreezeEffect(bool applyShock = false)
-
-	debug.trace("freeze effect triggered " + victim)
 	
 	GoToState("EffectBuffer")
 	

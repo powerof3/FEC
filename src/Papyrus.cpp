@@ -258,21 +258,8 @@ namespace FEC::Papyrus
 		});
 	}
 
-	void ResetHead(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor)
-	{
-		if (!a_actor) {
-			a_vm->TraceStack("Actor is None", a_stackID);
-			return;
-		}
-
-		SKSE::GetTaskInterface()->AddTask([a_actor]() {
-			if (auto head = a_actor->GetFaceNodeSkinned()) {
-				if (auto npc = a_actor->GetActorBase()) {
-					detail::UpdateHeadAndHair(npc, a_actor, head);
-				}
-			}
-		});
-	}
+	void ResetHead(VM*, StackID, RE::StaticFunctionTag*, RE::Actor*)
+	{}
 
 	bool GetPermanentDeathEffect(VM* a_vm, StackID a_stackID, RE::StaticFunctionTag*, RE::Actor* a_actor, std::int32_t a_type)
 	{
@@ -461,15 +448,21 @@ namespace FEC::Papyrus
 
 	std::uint32_t GetRandomFlag(VM*, StackID, RE::StaticFunctionTag*, std::uint32_t a_mask, std::uint32_t a_count)
 	{
-		std::uint32_t flag = 0;
-		std::uint32_t bit = 0;
+		std::vector<std::uint32_t> positions{};
+		positions.reserve(std::popcount(a_mask));
 
-		do {
-			flag = clib_util::RNG().generate<std::uint32_t>(0, a_count - 1);
-			bit = 1 << flag;
-		} while (!(a_mask & bit));
+		for (std::uint32_t i = 0; i < a_count; ++i) {
+			if (a_mask & (1u << i)) {
+				positions.push_back(i);
+			}
+		}
 
-		return flag;
+		if (positions.empty()) {
+			return 0;
+		}
+
+		auto idx = clib_util::RNG().generate<std::size_t>(0, positions.size() - 1);
+		return positions[idx];
 	}
 
 	bool Bind(VM* a_vm)
