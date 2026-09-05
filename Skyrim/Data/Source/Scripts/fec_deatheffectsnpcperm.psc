@@ -1663,18 +1663,9 @@ Function FreezeEffect(bool applyShock = false)
 			endif
 		
 			inventoryArray = AddAllItemsToArray(victim, true, false, false)
-			notEquippedArray = AddAllEquippedItemsToArray(victim)		
-			int iIndex = inventoryArray.Length
-			while iIndex
-				iIndex -= 1
-				victim.RemoveItem(inventoryArray[iIndex], 1, true, inventoryContainer)  
-			endwhile		
-			int iIndex2 = notEquippedArray.Length
-			while iIndex2
-				iIndex2 -= 1
-				inventoryContainer.AddItem(notEquippedArray[iIndex2], 1)  
-			endwhile
-			inventoryContainer.SetActorOwner(playerRef.GetActorBase())	
+			notEquippedArray = AddAllEquippedItemsToArray(victim)
+
+			TransferInventoryToContainer(victim, inventoryContainer, playerRef, inventoryArray, notEquippedArray)
 			
 		endif
 		

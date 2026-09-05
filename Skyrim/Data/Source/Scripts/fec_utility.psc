@@ -245,9 +245,33 @@ bool Function WaitFor3DLoad(ObjectReference akRef, int timeOut = 50) global
 	int i = 0
 	while !akRef.Is3DLoaded() && i < timeOut
 		Utility.Wait(0.1)
-		i += 1
+		i += 1	
 	endwhile
 
 	return akRef.Is3DLoaded()
+
+endFunction
+
+Function TransferInventoryToContainer(Actor akVictim, ObjectReference akContainer, Actor akPlayer, Form[] akInventory, Form[] akEquipped) global
+	
+	if !akVictim || !akContainer
+		return
+	endif
+
+	int iIndex = akInventory.Length
+	while iIndex
+		iIndex -= 1
+		Form item = akInventory[iIndex]
+		akVictim.RemoveItem(item,  akVictim.GetItemCount(item), true, akContainer)
+	endwhile
+
+	int iIndex2 = akEquipped.Length
+	while iIndex2
+		iIndex2 -= 1
+		Form equippedItem = akEquipped[iIndex2]
+		akContainer.AddItem(equippedItem,akVictim.GetItemCount(equippedItem))
+	endwhile
+
+	akContainer.SetActorOwner(akPlayer.GetActorBase())
 
 endFunction
