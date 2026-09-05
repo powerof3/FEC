@@ -24,7 +24,7 @@ namespace FEC::Serialization
 		permanentEffectMap.save(a_intfc, kFECPerm, kSerializationVersion);
 		temporaryEffectMap.save(a_intfc, kFECTemp, kSerializationVersion);
 
-		logger::info("Finished saving data"sv);
+		REX::INFO("Finished saving data"sv);
 	}
 	void Manager::Load(SKSE::SerializationInterface* a_intfc)
 	{
@@ -33,14 +33,14 @@ namespace FEC::Serialization
 		std::uint32_t length;
 		while (a_intfc->GetNextRecordInfo(type, version, length)) {
 			if (version < kSerializationVersion) {
-				logger::critical("Loaded data is out of date! Read ({}), expected ({}) for type code ({})", version, std::to_underlying(kSerializationVersion), DecodeTypeCode(type));
+				REX::CRITICAL("Loaded data is out of date! Read ({}), expected ({}) for type code ({})", version, std::to_underlying(kSerializationVersion), DecodeTypeCode(type));
 				continue;
 			}
 			switch (type) {
 			case kFECReset:
 				{
 					if (version != kFECResetVersion) {
-						logger::critical("Loaded data for FEC reset is out of date! Read ({}), expected ({}) for type code ({})", version, std::to_underlying(kFECResetVersion), DecodeTypeCode(type));
+						REX::CRITICAL("Loaded data for FEC reset is out of date! Read ({}), expected ({}) for type code ({})", version, std::to_underlying(kFECResetVersion), DecodeTypeCode(type));
 					} else {
 						FECreset.Load(a_intfc);
 					}
@@ -56,7 +56,7 @@ namespace FEC::Serialization
 				break;
 			}
 		}
-		logger::info("Finished loading data"sv);
+		REX::INFO("Finished loading data"sv);
 	}
 	void Manager::Revert(SKSE::SerializationInterface* a_intfc)
 	{
@@ -65,7 +65,7 @@ namespace FEC::Serialization
 		permanentEffectMap.clear();
 		temporaryEffectMap.clear();
 
-		logger::info("Finished reverting data"sv);
+		REX::INFO("Finished reverting data"sv);
 	}
 	void Manager::FormDelete(RE::VMHandle a_handle)
 	{

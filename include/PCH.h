@@ -9,34 +9,32 @@
 #include <shared_mutex>
 
 #include "RE/Skyrim.h"
-#include "REX/REX/Singleton.h"
+#include "REX/REX.h"
 #include "SKSE/SKSE.h"
 
-#include <ClibUtil/numeric.hpp>
-#include <ClibUtil/rng.hpp>
-#include <ClibUtil/string.hpp>
-#include <ankerl/unordered_dense.h>
+#include <boost/regex.hpp>
+#include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/unordered/unordered_flat_set.hpp>
 #include <frozen/map.h>
 #include <spdlog/sinks/basic_file_sink.h>
-#include <srell.hpp>
 #include <xbyak/xbyak.h>
 
-#define DLLEXPORT __declspec(dllexport)
-
-namespace logger = SKSE::log;
-namespace numeric = clib_util::numeric;
-namespace string = clib_util::string;
+#undef ERROR
 
 using namespace std::literals;
 
+template <class K, class D, class H = boost::hash<K>, class KEqual = std::equal_to<K>>
+using Map = boost::unordered_flat_map<K, D, H, KEqual>;
+
+template <class K, class H = boost::hash<K>, class KEqual = std::equal_to<K>>
+using Set = boost::unordered_flat_set<K, H, KEqual>;
+
 namespace stl
 {
-	using namespace SKSE::stl;
-
 	template <class T>
 	void write_thunk_call(std::uintptr_t a_src)
 	{
-		auto& trampoline = SKSE::GetTrampoline();
+		auto& trampoline = REL::GetTrampoline();
 		T::func = trampoline.write_call<5>(a_src, T::thunk);
 	}
 
@@ -67,8 +65,8 @@ namespace stl
 		Patch p(a_src, BYTES);
 		p.ready();
 
-		auto& trampoline = SKSE::GetTrampoline();
-		trampoline.write_branch<5>(a_src, T::thunk);
+		auto& trampoline = REL::GetTrampoline();
+		trampoline.write_jmp<5>(a_src, T::thunk);
 
 		auto alloc = trampoline.allocate(p.getSize());
 		std::memcpy(alloc, p.getCode(), p.getSize());
@@ -94,6 +92,20 @@ namespace stl
 
 		return enum_range;
 	};
+}
+
+namespace Runtime
+{
+	inline constexpr REL::Version SSE_1_7_99(1, 7, 99, 0);
+	inline constexpr REL::Version MIN_ADDRESS_LIBRARY_V5 = SSE_1_7_99;
+
+	inline REL::Version version{};
+
+	[[nodiscard]] inline bool IsAtLeast1_7_99() noexcept
+	{
+		static bool result = REX::FModule::GetExecutingModule().GetFileVersion() >= Runtime::SSE_1_7_99;
+		return result;
+	}
 }
 
 #ifdef SKYRIM_AE

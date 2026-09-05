@@ -132,7 +132,7 @@ namespace FEC::Papyrus
 
 		if (effectPair.first == DEATH::TYPE::kNone && !effectMap.empty()) {
 			constexpr auto mag_cmp = [](const auto& a_lhs, const auto& a_rhs) {
-				return numeric::definitely_less_than(a_lhs.second, a_rhs.second);
+				return REX::FLT::DEFINITELY_LESS(a_lhs.second, a_rhs.second);
 			};
 
 			if (effectMap.size() == 1) {
@@ -184,7 +184,7 @@ namespace FEC::Papyrus
 							auto& shockVec = effectMap[DEATH::TYPE::kShock];
 							auto& shockEffect = *std::ranges::max_element(shockVec, mag_cmp);
 
-							if (numeric::definitely_less_than(drainEffect.second, shockEffect.second)) {
+							if (REX::FLT::DEFINITELY_LESS(drainEffect.second, shockEffect.second)) {
 								effectPair.second = shockEffect.first;
 							}
 						} else if (frost) {
@@ -192,7 +192,7 @@ namespace FEC::Papyrus
 							auto& frostVec = effectMap[DEATH::TYPE::kFrost];
 							auto& frostEffect = *std::ranges::max_element(frostVec, mag_cmp);
 
-							if (numeric::definitely_less_than(drainEffect.second, frostEffect.second)) {
+							if (REX::FLT::DEFINITELY_LESS(drainEffect.second, frostEffect.second)) {
 								effectPair.second = frostEffect.first;
 							}
 						}
@@ -205,7 +205,7 @@ namespace FEC::Papyrus
 							auto& shockVec = effectMap[DEATH::TYPE::kShock];
 							auto& shockEffect = *std::ranges::max_element(shockVec, mag_cmp);
 
-							if (numeric::definitely_less_than(frostEffect.second, shockEffect.second)) {
+							if (REX::FLT::DEFINITELY_LESS(frostEffect.second, shockEffect.second)) {
 								effectPair = { DEATH::TYPE::kShockFrost, shockEffect.first };
 							} else {
 								effectPair.first = { DEATH::TYPE::kFrostShock };
@@ -461,14 +461,14 @@ namespace FEC::Papyrus
 			return 0;
 		}
 
-		auto idx = clib_util::RNG().generate<std::size_t>(0, positions.size() - 1);
-		return positions[idx];
+		thread_local auto RNG = REX::TRandom<std::size_t>{};
+		return positions[RNG.Generate(0, positions.size() - 1)];
 	}
 
 	bool Bind(VM* a_vm)
 	{
 		if (!a_vm) {
-			logger::critical("couldn't get VM State"sv);
+			REX::CRITICAL("couldn't get VM State"sv);
 			return false;
 		}
 
@@ -498,7 +498,7 @@ namespace FEC::Papyrus
 
 		BIND(GetRandomFlag, true);
 
-		logger::info("Registered FEC functions"sv);
+		REX::INFO("Registered FEC functions"sv);
 
 		return true;
 	}

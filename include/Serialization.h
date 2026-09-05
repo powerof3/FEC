@@ -44,13 +44,13 @@ namespace FEC::Serialization
 	};
 
 	class Manager :
-		public REX::Singleton<Manager>,
+		public REX::TSingleton<Manager>,
 		public RE::BSTEventSink<RE::TESFormDeleteEvent>,
 		public RE::BSTEventSink<RE::TESResetEvent>,
 		public RE::BSTEventSink<RE::TESLoadGameEvent>
 	{
 	public:
-		using TempEffectSet = ankerl::unordered_dense::set<ActorEffect::Temporary>;
+		using TempEffectSet = Set<ActorEffect::Temporary>;
 
 		template <class T>
 		class ActorEffectMap
@@ -146,7 +146,7 @@ namespace FEC::Serialization
 			{
 				assert(a_intfc);
 				if (!a_intfc->OpenRecord(a_type, a_version)) {
-					logger::error("Failed to open record!");
+					REX::ERROR("Failed to open record!");
 					return false;
 				}
 
@@ -159,34 +159,34 @@ namespace FEC::Serialization
 
 				const std::size_t numRegs = _map.size();
 				if (!a_intfc->WriteRecordData(numRegs)) {
-					logger::error("Failed to save map size ({})!", numRegs);
+					REX::ERROR("Failed to save map size ({})!", numRegs);
 					return false;
 				}
 
 				if constexpr (std::is_same_v<T, ActorEffect::Permanent>) {
 					for (auto& [formID, effect] : _map) {
 						if (!a_intfc->WriteRecordData(formID)) {
-							logger::error("\tFailed to save key ({:X}: {})!", formID, static_cast<std::uint32_t>(effect));
+							REX::ERROR("\tFailed to save key ({:X}: {})!", formID, static_cast<std::uint32_t>(effect));
 							return false;
 						}
 						if (!a_intfc->WriteRecordData(static_cast<std::uint32_t>(effect))) {
-							logger::error("\tFailed to save value ({:X}: {})!", formID, static_cast<std::uint32_t>(effect));
+							REX::ERROR("\tFailed to save value ({:X}: {})!", formID, static_cast<std::uint32_t>(effect));
 							return false;
 						}
 					}
 				} else {
 					for (auto& [formID, effects] : _map) {
 						if (!a_intfc->WriteRecordData(formID)) {
-							logger::error("\tFailed to save key ({:X})!", formID);
+							REX::ERROR("\tFailed to save key ({:X})!", formID);
 							return false;
 						}
 						if (!a_intfc->WriteRecordData(effects.size())) {
-							logger::error("\tFailed to save effects size ({:X})!", formID);
+							REX::ERROR("\tFailed to save effects size ({:X})!", formID);
 							return false;
 						}
 						for (auto& effect : effects) {
 							if (!a_intfc->WriteRecordData(static_cast<std::uint32_t>(effect))) {
-								logger::error("\tFailed to save reg ({:X} : {})!", formID, static_cast<std::uint32_t>(effect));
+								REX::ERROR("\tFailed to save reg ({:X} : {})!", formID, static_cast<std::uint32_t>(effect));
 								return false;
 							}
 						}
@@ -203,8 +203,8 @@ namespace FEC::Serialization
 			}
 
 		private:
-			mutable Lock                                _lock{};
-			ankerl::unordered_dense::map<RE::FormID, T> _map{};
+			mutable Lock       _lock{};
+			Map<RE::FormID, T> _map{};
 		};
 
 		static void Register()
@@ -213,7 +213,7 @@ namespace FEC::Serialization
 				scripts->AddEventSink<RE::TESFormDeleteEvent>(GetSingleton());
 				scripts->AddEventSink<RE::TESResetEvent>(GetSingleton());
 				scripts->AddEventSink<RE::TESLoadGameEvent>(GetSingleton());
-				logger::info("Registered form deletion event handler"sv);
+				REX::INFO("Registered form deletion event handler"sv);
 			}
 		}
 

@@ -42,7 +42,7 @@ namespace FEC
 						}
 					}
 				}
-				logger::info("Patched {} death dialogues from showing up on frozen NPCs.", topicCount);
+				REX::INFO("Patched {} death dialogues from showing up on frozen NPCs.", topicCount);
 			}
 		}
 
@@ -77,7 +77,7 @@ namespace FEC
 						}
 					}
 				}
-				logger::info("Finished actorbase bodytint edits on {} falmer, {} giants, {} hagravens and {} rieklings", falmerCount, giantCount, hagravenCount, rieklingCount);
+				REX::INFO("Finished actorbase bodytint edits on {} falmer, {} giants, {} hagravens and {} rieklings", falmerCount, giantCount, hagravenCount, rieklingCount);
 			}
 		}
 
@@ -103,7 +103,7 @@ namespace FEC
 						shader->data.particleShaderAnimatedFrameCount = defFireFXS->data.particleShaderAnimatedFrameCount;
 					}
 				}
-				logger::info("Applied EmbersXD patch");
+				REX::INFO("Applied EmbersXD patch");
 			}
 		}
 
@@ -119,14 +119,14 @@ namespace FEC
 					listFoodRaw->AddForm(RE::TESForm::LookupByEditorID(rawID));
 					listFoodCooked->AddForm(RE::TESForm::LookupByEditorID(cookedID));
 				}
-				logger::info("Applied CACO patch");
+				REX::INFO("Applied CACO patch");
 			}
 			if (dataHandler->LookupModByName("Hunterborn.esp")) {
 				for (auto& [rawID, cookedID] : FOOD::hunterborn_map) {
 					listFoodRaw->AddForm(RE::TESForm::LookupByEditorID(rawID));
 					listFoodCooked->AddForm(RE::TESForm::LookupByEditorID(cookedID));
 				}
-				logger::info("Applied Hunterborn patch");
+				REX::INFO("Applied Hunterborn patch");
 			}
 		}
 
@@ -162,7 +162,7 @@ namespace FEC
 					shader->data.particleShaderFullParticleBirthRatio = FEC_FireFXParticleCount->value;
 				}
 			}
-			logger::info("Applied fire shader particle counts");
+			REX::INFO("Applied fire shader particle counts");
 		}
 
 		void SunShader()
@@ -175,7 +175,7 @@ namespace FEC
 				sunFXS->data.particleShaderFullParticleBirthRatio = FEC_SunFXParticleCount->value;
 			}
 
-			logger::info("Applied sun shader particle counts");
+			REX::INFO("Applied sun shader particle counts");
 		}
 
 		void MiscPatches()
@@ -203,7 +203,7 @@ namespace FEC
 
 			if (a_npc->HasApplicableKeywordString(KEYWORD::NPC)) {
 				const auto race = a_npc->GetRace();
-				return !(race && (race->IsChildRace() || string::icontains(race->GetFormEditorID(), "Child")));
+				return !(race && (race->IsChildRace() || REX::STR::ICONTAINS(race->GetFormEditorID(), "Child")));
 			}
 
 			if (a_npc->HasApplicableKeywordString(KEYWORD::Creature) || a_npc->HasApplicableKeywordString(KEYWORD::Animal)) {
@@ -273,7 +273,7 @@ namespace FEC
 				}
 			}
 
-			logger::info("Finished sun keyword distribution. {} magic effects processed", count);
+			REX::INFO("Finished sun keyword distribution. {} magic effects processed", count);
 		}
 
 		void Install()

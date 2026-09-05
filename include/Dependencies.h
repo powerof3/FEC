@@ -2,33 +2,6 @@
 
 namespace Dependencies
 {
-	struct Version
-	{
-		Version(std::uint32_t a_major, std::uint32_t a_minor, std::uint32_t a_patch) :
-			major(a_major),
-			minor(a_minor),
-			patch(a_patch)
-		{}
-
-		explicit Version(const std::string& a_version)
-		{
-			const auto splitVer = string::split(a_version, ".");
-
-			major = string::to_num<std::uint32_t>(splitVer[0]);
-			minor = string::to_num<std::uint32_t>(splitVer[1]);
-			patch = string::to_num<std::uint32_t>(splitVer[2]);
-		}
-
-		bool operator<(const Version& a_rhs) const
-		{
-			return major < a_rhs.major && minor < a_rhs.minor;
-		}
-
-		std::uint32_t major{ 0 };
-		std::uint32_t minor{ 0 };
-		std::uint32_t patch{ 0 };
-	};
-
 	using _PEGETVERSION = const char* (*)();
 
 	std::string CheckErrors();
@@ -37,21 +10,17 @@ namespace Dependencies
 	inline constexpr auto PapyrusUtil{ "PapyrusUtil"sv };
 	inline constexpr auto po3Tweaks{ "po3_Tweaks"sv };
 
-	inline Version requiredPE{ 6, 3, 0 };
+	inline REL::Version to_version(const std::string& a_version)
+	{
+		const auto splitVer = REX::STR::SPLIT(a_version, ".");
+
+		return REL::Version(
+			REX::STR::TO_NUM<std::uint16_t>(splitVer[0]),
+			REX::STR::TO_NUM<std::uint16_t>(splitVer[1]),
+			REX::STR::TO_NUM<std::uint16_t>(splitVer[2]),
+			REX::STR::TO_NUM<std::uint16_t>(splitVer[3])
+		);
+	}
+
+	inline REL::Version requiredPE{ 6, 3, 0 };
 }
-
-template <>
-struct std::formatter<Dependencies::Version>
-{
-	template <class ParseContext>
-	constexpr auto parse(ParseContext& a_ctx)
-	{
-		return a_ctx.begin();
-	}
-
-	template <class FormatContext>
-	auto format(const Dependencies::Version& a_version, FormatContext& a_ctx) const
-	{
-		return std::format_to(a_ctx.out(), "{}.{}.{}", a_version.major, a_version.minor, a_version.patch);
-	}
-};

@@ -29,7 +29,7 @@ namespace FEC::GRAPHICS
 		bool Reset(RE::BSGeometry* a_geometry, RE::BSLightingShaderProperty* a_shaderProp, MaterialBase* a_material) const;
 
 		RE::BSShaderTextureSet* textureSet;
-		REX::Enum<Feature>      feature;
+		REX::TEnum<Feature>     feature;
 		std::uint64_t           flags;
 		RE::NiColor             emissiveColor;
 		float                   emissiveMult;

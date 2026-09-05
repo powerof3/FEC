@@ -7,12 +7,15 @@ namespace FEC::GRAPHICS
 	{
 		void sanitize_path(std::string& a_path)
 		{
-			std::ranges::transform(a_path, a_path.begin(),
-				[](char c) { return static_cast<char>(std::tolower(c)); });
+			static const boost::regex slashPattern("/+|\\\\+");
+			static const boost::regex leadingSlashPattern("^\\\\+");
+			static const boost::regex texturesPattern(R"(.*?[^\s]textures\\|^textures\\)", boost::regex::icase);
 
-			a_path = srell::regex_replace(a_path, srell::regex("/+|\\\\+"), "\\");
-			a_path = srell::regex_replace(a_path, srell::regex("^\\\\+"), "");
-			a_path = srell::regex_replace(a_path, srell::regex(R"(.*?[^\s]textures\\|^textures\\)", srell::regex::icase), "");
+			a_path = REX::STR::TO_LOWER(a_path);
+
+			a_path = boost::regex_replace(a_path, slashPattern, "\\");
+			a_path = boost::regex_replace(a_path, leadingSlashPattern, "");
+			a_path = boost::regex_replace(a_path, texturesPattern, "");
 		}
 
 		RE::BSShaderTextureSet* create_textureset(char** a_value)
@@ -20,7 +23,7 @@ namespace FEC::GRAPHICS
 			const auto textureset = RE::BSShaderTextureSet::Create();
 			if (textureset) {
 				for (const auto type : stl::enum_range(Texture::kDiffuse, Texture::kTotal)) {
-					if (!string::is_empty(a_value[type])) {
+					if (!REX::STR::IS_EMPTY(a_value[type])) {
 						textureset->SetTexturePath(type, a_value[type]);
 					}
 				}
@@ -36,10 +39,10 @@ namespace FEC::GRAPHICS
 		if (a_data && a_data->value && a_data->size == kShaderTotal) {
 			if (const auto new_txst = TEXTURE::create_textureset(a_data->value); new_txst) {
 				textureSet = new_txst;
-				feature = string::to_num<Feature>(a_data->value[kFeature]);
-				flags = string::to_num<std::uint64_t>(a_data->value[kFlag]);
-				emissiveColor = RE::NiColor(string::to_num<std::uint32_t>(a_data->value[kColor]));
-				emissiveMult = string::to_num<float>(a_data->value[kColorMult]);
+				feature = REX::STR::TO_NUM<Feature>(a_data->value[kFeature]);
+				flags = REX::STR::TO_NUM<std::uint64_t>(a_data->value[kFlag]);
+				emissiveColor = RE::NiColor(REX::STR::TO_NUM<std::uint32_t>(a_data->value[kColor]));
+				emissiveMult = REX::STR::TO_NUM<float>(a_data->value[kColorMult]);
 				hasData = true;
 			}
 		}
@@ -71,7 +74,7 @@ namespace FEC::GRAPHICS
 			a_shaderProp->FinishSetupGeometry(a_geometry);
 
 			newMaterial->~BSLightingShaderMaterialBase();
-			RE::free(newMaterial);
+			RE::MemoryManager::GetSingleton()->GetThreadScrapHeap()->Deallocate(newMaterial);
 		}
 
 		return true;
@@ -156,51 +159,51 @@ namespace FEC::GRAPHICS
 				continue;
 			}
 			if (const auto name = extraData->GetName(); !name.empty()) {
-				switch (string::const_hash(name)) {
-				case string::const_hash(EXTRA::TOGGLE):
+				switch (REX::STR::CONST_HASH(name)) {
+				case REX::STR::CONST_HASH(EXTRA::TOGGLE):
 					{
 						toggle = static_cast<RE::NiStringsExtraData*>(extraData);
 						hasData = true;
 					}
 					break;
-				case string::const_hash(EXTRA::SKIN_TINT):
+				case REX::STR::CONST_HASH(EXTRA::SKIN_TINT):
 					{
 						tintSkin = static_cast<RE::NiIntegerExtraData*>(extraData);
 						hasData = true;
 					}
 					break;
-				case string::const_hash(EXTRA::HAIR_TINT):
+				case REX::STR::CONST_HASH(EXTRA::HAIR_TINT):
 					{
 						tintHair = static_cast<RE::NiIntegerExtraData*>(extraData);
 						hasData = true;
 					}
 					break;
-				case string::const_hash(EXTRA::SKIN_ALPHA):
+				case REX::STR::CONST_HASH(EXTRA::SKIN_ALPHA):
 					{
 						alphaSkin = static_cast<RE::NiBooleanExtraData*>(extraData);
 						hasData = true;
 					}
 					break;
-				case string::const_hash(EXTRA::FACE_TXST):
+				case REX::STR::CONST_HASH(EXTRA::FACE_TXST):
 					{
 						txstFace = static_cast<RE::NiStringsExtraData*>(extraData);
 						hasData = true;
 					}
 					break;
 				default:
-					if (string::icontains(name, EXTRA::HEADPART)) {
+					if (REX::STR::ICONTAINS(name, EXTRA::HEADPART)) {
 						alphaHDPT.emplace_back(static_cast<RE::NiIntegerExtraData*>(extraData));
 						hasData = true;
 
-					} else if (string::icontains(name, EXTRA::TXST)) {
+					} else if (REX::STR::ICONTAINS(name, EXTRA::TXST)) {
 						txst.emplace_back(static_cast<RE::NiStringsExtraData*>(extraData));
 						hasData = true;
 
-					} else if (string::icontains(name, EXTRA::SKIN_TXST)) {
+					} else if (REX::STR::ICONTAINS(name, EXTRA::SKIN_TXST)) {
 						txstSkin.emplace_back(static_cast<RE::NiStringsExtraData*>(extraData));
 						hasData = true;
 
-					} else if (string::icontains(name, EXTRA::SHADER)) {
+					} else if (REX::STR::ICONTAINS(name, EXTRA::SHADER)) {
 						shaders.emplace_back(static_cast<RE::NiStringsExtraData*>(extraData));
 						hasData = true;
 					}
@@ -280,7 +283,7 @@ namespace FEC::GRAPHICS
 		if (toggle && toggle->value && toggle->size > 0) {
 			std::span<char*> span(toggle->value, toggle->size);
 			for (const auto& string : span) {
-				if (!string::is_empty(string)) {
+				if (!REX::STR::IS_EMPTY(string)) {
 					if (const auto object = root->GetObjectByName(string); object) {
 						object->CullNode(false);
 					}
@@ -378,7 +381,7 @@ namespace FEC::GRAPHICS
 				RE::FormID formID = 0;
 				if (std::string armorID{ data->value[data->size - 1] }; !armorID.empty()) {
 					try {
-						formID = string::to_num<RE::FormID>(armorID, true);
+						formID = REX::STR::TO_NUM<RE::FormID>(armorID, true);
 					} catch (...) {
 						continue;
 					}
@@ -413,7 +416,7 @@ namespace FEC::GRAPHICS
 				auto slot = Slot::kNone;
 				if (std::string slotMaskstr{ data->value[data->size - 1] }; !slotMaskstr.empty()) {
 					try {
-						slot = string::to_num<Slot>(slotMaskstr);
+						slot = REX::STR::TO_NUM<Slot>(slotMaskstr);
 					} catch (...) {
 						continue;
 					}
@@ -470,7 +473,7 @@ namespace FEC::GRAPHICS
 	void ActorResetter::reset_textureset(RE::NiAVObject* a_object, RE::BSShaderTextureSet* a_txst, bool a_doOnlySkin, const std::string& a_folder)
 	{
 		RE::BSVisit::TraverseScenegraphGeometries(a_object, [&](RE::BSGeometry* a_geometry) -> RE::BSVisit::BSVisitControl {
-			const auto& effect = a_geometry->properties[States::kEffect];
+			const auto& effect = a_geometry->shaderProperty;
 			const auto  lightingShader = netimmerse_cast<RE::BSLightingShaderProperty*>(effect.get());
 			if (lightingShader) {
 				const auto material = static_cast<MaterialBase*>(lightingShader->material);
@@ -515,7 +518,7 @@ namespace FEC::GRAPHICS
 				return RE::BSVisit::BSVisitControl::kContinue;
 			}
 
-			const auto& effect = a_geometry->properties[States::kEffect];
+			const auto& effect = a_geometry->shaderProperty;
 			const auto  lightingShader = netimmerse_cast<RE::BSLightingShaderProperty*>(effect.get());
 
 			if (lightingShader) {
@@ -527,7 +530,7 @@ namespace FEC::GRAPHICS
 				if (const auto material = static_cast<MaterialBase*>(lightingShader->material)) {
 					auto shaderData = ShaderDataOutput(originalData);
 					if (!shaderData.Reset(a_geometry, lightingShader, material)) {
-						logger::warn("unable to get original shader values for {}", a_geometry->name.c_str());
+						REX::WARN("unable to get original shader values for {}", a_geometry->name.c_str());
 					}
 					lightingShader->RemoveExtraData(originalData->GetName());
 					a_geometry->RemoveExtraData(originalData->GetName());
@@ -609,14 +612,14 @@ namespace FEC::GRAPHICS
 					}
 
 					if (extraData && !extraData->name.empty()) {
-						switch (string::const_hash(extraData->name)) {
-						case string::const_hash("EXTRA_HEAD"sv):
+						switch (REX::STR::CONST_HASH(extraData->name)) {
+						case REX::STR::CONST_HASH("EXTRA_HEAD"sv):
 							result = 0;
 							break;
-						case string::const_hash("EXTRA_BODY"sv):
+						case REX::STR::CONST_HASH("EXTRA_BODY"sv):
 							result = 1;
 							break;
-						case string::const_hash("EXTRA_CHARRED_BODY"sv):
+						case REX::STR::CONST_HASH("EXTRA_CHARRED_BODY"sv):
 							result = 2;
 							break;
 						default:
@@ -699,7 +702,7 @@ namespace FEC::GRAPHICS
 				REL::Relocation<std::uintptr_t> update_head_and_hair{ RELOCATION_ID(24220, 24724) };  // head
 				stl::hook_function_prologue<UpdateHeadAndHair, OFFSET(5, 8)>(update_head_and_hair.address());
 
-				logger::info("Hooked armor attach.");
+				REX::INFO("Hooked armor attach.");
 			}
 		}
 
@@ -771,7 +774,7 @@ namespace FEC::GRAPHICS
 				REL::Relocation<std::uintptr_t> target{ RELOCATION_ID(15495, 15660), 0x1F };  //bhkWorld::RemoveObjects
 				stl::write_thunk_call<UpdateCollision>(target.address());
 
-				logger::info("Hooked armor detach.");
+				REX::INFO("Hooked armor detach.");
 			}
 		}
 	}
