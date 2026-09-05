@@ -16,6 +16,8 @@ namespace Dependencies
 				REL::Version currentPE = to_version(peGetVersion());
 				if (currentPE < requiredPE) {
 					return std::format("[FEC] Papyrus Extender is out of date! FEC requires {} or higher; current PE version is {}\n", requiredPE, currentPE);
+				} else {
+					REX::INFO("Current Papyrus Extender version: {}", currentPE);
 				}
 			} else {
 				REX::ERROR("Failed version check info from PapyrusExtender | error {} ", GetLastError());

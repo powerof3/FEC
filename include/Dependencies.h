@@ -14,11 +14,14 @@ namespace Dependencies
 	{
 		const auto splitVer = REX::STR::SPLIT(a_version, ".");
 
-		return REL::Version(
-			REX::STR::TO_NUM<std::uint16_t>(splitVer[0]),
-			REX::STR::TO_NUM<std::uint16_t>(splitVer[1]),
-			REX::STR::TO_NUM<std::uint16_t>(splitVer[2]),
-			REX::STR::TO_NUM<std::uint16_t>(splitVer[3]));
+		const auto to_num_safe = [&](std::size_t a_index) -> std::uint16_t {
+			if (a_index >= splitVer.size()) {
+				return 0;
+			}
+			return REX::STR::TO_NUM<std::uint16_t>(splitVer[a_index]);
+		};
+
+		return REL::Version(to_num_safe(0), to_num_safe(1), to_num_safe(2), to_num_safe(3));
 	}
 
 	inline REL::Version requiredPE{ 6, 3, 0 };
