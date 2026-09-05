@@ -18,8 +18,7 @@ namespace Dependencies
 			REX::STR::TO_NUM<std::uint16_t>(splitVer[0]),
 			REX::STR::TO_NUM<std::uint16_t>(splitVer[1]),
 			REX::STR::TO_NUM<std::uint16_t>(splitVer[2]),
-			REX::STR::TO_NUM<std::uint16_t>(splitVer[3])
-		);
+			REX::STR::TO_NUM<std::uint16_t>(splitVer[3]));
 	}
 
 	inline REL::Version requiredPE{ 6, 3, 0 };
